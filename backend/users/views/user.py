@@ -107,10 +107,11 @@ class DashboardStatsView(APIView):
     permission_classes = [IsAdmin]
 
     def get(self, request):
-        from django.db.models import Count
+        from pairings.models import TeacherStudentPairing, PairingStatus
         stats = {
             "total_teachers": CustomUser.objects.filter(role="teacher", is_active=True).count(),
             "total_students": CustomUser.objects.filter(role="student", is_active=True).count(),
+            "active_pairings": TeacherStudentPairing.objects.filter(status=PairingStatus.ACTIVE).count(),
         }
         return Response(stats)
 

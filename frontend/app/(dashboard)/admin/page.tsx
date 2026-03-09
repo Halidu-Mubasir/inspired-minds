@@ -4,11 +4,21 @@ import { Users, UserCheck, Link2, BookOpen } from "lucide-react";
 import { StatCard } from "@/components/shared/stat-card";
 import { usersApi } from "@/lib/api/users";
 
+interface DashboardStats {
+  total_teachers: number;
+  total_students: number;
+  active_pairings: number;
+}
+
 export default function AdminDashboardPage() {
-  const [stats, setStats] = useState({ total_teachers: 0, total_students: 0 });
+  const [stats, setStats] = useState<DashboardStats>({
+    total_teachers: 0,
+    total_students: 0,
+    active_pairings: 0,
+  });
 
   useEffect(() => {
-    usersApi.getDashboardStats().then(setStats).catch(() => {});
+    usersApi.getDashboardStats().then((data) => setStats(data as DashboardStats)).catch(() => {});
   }, []);
 
   return (
@@ -33,7 +43,7 @@ export default function AdminDashboardPage() {
         />
         <StatCard
           title="Active Pairings"
-          value="—"
+          value={stats.active_pairings}
           description="Ongoing teacher-student pairs"
           icon={Link2}
         />

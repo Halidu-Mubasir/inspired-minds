@@ -73,5 +73,5 @@ export const usersApi = {
 
   // Stats
   getDashboardStats: () =>
-    apiRequest<{ total_teachers: number; total_students: number }>("/auth/dashboard-stats/"),
+    apiRequest<{ total_teachers: number; total_students: number; active_pairings: number }>("/auth/dashboard-stats/"),
 };
