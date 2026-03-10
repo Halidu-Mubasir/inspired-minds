@@ -8,7 +8,6 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/use-auth";
 import type { UserRole } from "@/lib/constants";
 
@@ -44,28 +43,59 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
   ],
 };
 
+// Deep, rich sidebar colors per role
+const ROLE_THEME: Record<UserRole, { bg: string; logoBg: string; logoText: string }> = {
+  admin: {
+    bg: "#0c2340",       // deep navy
+    logoBg: "rgba(255,255,255,0.12)",
+    logoText: "#ffffff",
+  },
+  teacher: {
+    bg: "#7c1d2e",       // burgundy-maroon
+    logoBg: "rgba(255,255,255,0.12)",
+    logoText: "#ffffff",
+  },
+  student: {
+    bg: "#2e1065",       // deep indigo-violet
+    logoBg: "rgba(255,255,255,0.12)",
+    logoText: "#ffffff",
+  },
+};
+
 export function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const role = user?.role as UserRole;
   const items = role ? NAV_ITEMS[role] : [];
+  const theme = role ? ROLE_THEME[role] : null;
 
   return (
-    <div className="flex flex-col h-full border-r bg-background w-64">
+    <div
+      className="flex flex-col h-full w-64"
+      style={theme ? { backgroundColor: theme.bg } : undefined}
+    >
       {/* Logo */}
-      <div className="flex items-center gap-2 px-6 py-5 border-b">
-        <div className="flex items-center justify-center bg-primary text-primary-foreground rounded-lg p-1.5">
-          <BookOpen className="h-5 w-5" />
+      <div
+        className="flex items-center gap-2.5 px-6 py-5"
+        style={{ borderBottom: "1px solid rgba(255,255,255,0.1)" }}
+      >
+        <div
+          className="flex items-center justify-center rounded-lg p-1.5"
+          style={{ backgroundColor: theme?.logoBg }}
+        >
+          <BookOpen className="h-5 w-5 text-white" />
         </div>
         <div>
-          <p className="font-semibold text-sm leading-none">Inspired Minds</p>
-          <p className="text-xs text-muted-foreground capitalize">{role} Portal</p>
+          <p className="font-semibold text-sm leading-none text-white">Inspired Minds</p>
+          <p className="text-xs capitalize mt-0.5" style={{ color: "rgba(255,255,255,0.55)" }}>
+            {role} Portal
+          </p>
         </div>
       </div>
 
       {/* Navigation */}
       <ScrollArea className="flex-1 py-4">
-        <nav className="space-y-1 px-3">
+        <nav className="space-y-0.5 px-3">
           {items.map((item) => {
             const Icon = item.icon;
             const isActive =
@@ -77,10 +107,10 @@ export function Sidebar() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
                   isActive
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    ? "bg-white/20 text-white shadow-sm"
+                    : "text-white/65 hover:bg-white/10 hover:text-white/90"
                 )}
               >
                 <Icon className="h-4 w-4 shrink-0" />
@@ -92,15 +122,14 @@ export function Sidebar() {
       </ScrollArea>
 
       {/* Footer */}
-      <div className="p-3 border-t space-y-1">
-        <Separator className="mb-2" />
+      <div className="p-3" style={{ borderTop: "1px solid rgba(255,255,255,0.1)" }}>
         <Link
           href="/profile"
           className={cn(
-            "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+            "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
             pathname === "/profile"
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              ? "bg-white/20 text-white"
+              : "text-white/65 hover:bg-white/10 hover:text-white/90"
           )}
         >
           <Settings className="h-4 w-4" />
@@ -108,7 +137,7 @@ export function Sidebar() {
         </Link>
         <Button
           variant="ghost"
-          className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive"
+          className="w-full justify-start gap-3 mt-0.5 text-white/65 hover:text-white/90 hover:bg-white/10"
           onClick={logout}
         >
           <LogOut className="h-4 w-4" />

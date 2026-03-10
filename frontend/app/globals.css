@@ -71,6 +71,10 @@
   --color-ring: var(--ring);
 }
 
+@theme inline {
+  --font-sans: var(--font-plus-jakarta), ui-sans-serif, system-ui, sans-serif;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
