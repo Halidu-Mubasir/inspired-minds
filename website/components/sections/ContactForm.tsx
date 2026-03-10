@@ -109,7 +109,7 @@ export function ContactForm() {
                   <Input
                     id="phone"
                     type="tel"
-                    placeholder="+233 20 000 0000"
+                    placeholder="e.g. 0550 583 636"
                     {...register("phone")}
                   />
                 </div>
@@ -123,6 +123,7 @@ export function ContactForm() {
                     <SelectValue placeholder="Select level" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="nursery_kg">Nursery / Kindergarten</SelectItem>
                     <SelectItem value="primary">Primary</SelectItem>
                     <SelectItem value="jhs">Junior High (JHS)</SelectItem>
                     <SelectItem value="shs">Senior High (SHS)</SelectItem>

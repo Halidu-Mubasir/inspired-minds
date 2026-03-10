@@ -1,7 +1,17 @@
 import { SectionHeader } from "@/components/common/SectionHeader";
-import { GraduationCap, BookOpen, School, University } from "lucide-react";
+import { GraduationCap, BookOpen, School, University, Baby } from "lucide-react";
 
 const STUDENT_TYPES = [
+  {
+    icon: Baby,
+    level: "Nursery & Kindergarten",
+    ages: "Ages 2 – 6",
+    description:
+      "Early childhood learning through play — phonics, number recognition, colours, shapes, and social skills. Our tutors nurture curiosity and build a love of learning from the very start.",
+    color: "bg-pink-50 border-pink-200",
+    iconColor: "text-pink-500",
+    badgeColor: "bg-pink-100 text-pink-700",
+  },
   {
     icon: School,
     level: "Primary",
@@ -50,10 +60,10 @@ export function StudentTypesSection() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <SectionHeader
           title="Who We Teach"
-          subtitle="We support students at every stage of their academic journey, from Primary through University."
+          subtitle="We support students at every stage of their academic journey, from Nursery through University."
         />
 
-        <div className="mt-16 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-16 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {STUDENT_TYPES.map((type) => (
             <div
               key={type.level}

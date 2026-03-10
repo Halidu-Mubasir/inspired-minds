@@ -1,8 +1,9 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Menu, X, BookOpen } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { NAV_LINKS } from "@/lib/data/nav-links";
 
@@ -18,13 +19,15 @@ export function Navbar() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-500">
-              <BookOpen className="h-5 w-5 text-white" />
-            </div>
-            <span className="text-white font-bold text-lg tracking-tight">
-              Inspired Minds
-            </span>
+          <Link href="/" className="flex items-center">
+            <Image
+              src="/logo.jpeg"
+              alt="Inspired Minds Home Tuition Agency"
+              width={160}
+              height={50}
+              className="h-12 w-auto rounded-lg bg-white px-2 py-1 object-contain"
+              priority
+            />
           </Link>
 
           {/* Desktop nav */}
@@ -68,13 +71,14 @@ export function Navbar() {
               style={{ backgroundColor: "#0c2340" }}
             >
               {/* Mobile header */}
-              <div className="flex items-center gap-2 px-6 py-5 border-b border-white/10">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-500">
-                  <BookOpen className="h-5 w-5 text-white" />
-                </div>
-                <span className="text-white font-bold text-lg">
-                  Inspired Minds
-                </span>
+              <div className="flex items-center px-6 py-5 border-b border-white/10">
+                <Image
+                  src="/logo.jpeg"
+                  alt="Inspired Minds Home Tuition Agency"
+                  width={140}
+                  height={44}
+                  className="h-11 w-auto rounded-lg bg-white px-2 py-1 object-contain"
+                />
               </div>
 
               {/* Mobile links */}

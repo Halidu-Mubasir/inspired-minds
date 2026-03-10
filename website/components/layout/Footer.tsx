@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { BookOpen, Phone, Mail, MapPin } from "lucide-react";
+import Image from "next/image";
+import { Phone, Mail, MapPin } from "lucide-react";
 import { SUBJECTS } from "@/lib/data/subjects";
 import { NAV_LINKS } from "@/lib/data/nav-links";
 
@@ -12,14 +13,17 @@ export function Footer() {
         <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-4">
           {/* Col 1: Brand */}
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-500">
-                <BookOpen className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-white font-bold text-lg">Inspired Minds</span>
+            <div className="mb-4">
+              <Image
+                src="/logo.jpeg"
+                alt="Inspired Minds Home Tuition Agency"
+                width={160}
+                height={50}
+                className="h-12 w-auto rounded-lg bg-white px-2 py-1 object-contain"
+              />
             </div>
             <p className="text-white/60 text-sm leading-relaxed">
-              Connecting students with qualified, vetted home tutors across Ghana.
+              Connecting students in Tamale with qualified, vetted home tutors.
               Quality education, delivered to your door.
             </p>
             {/* Social placeholders */}
@@ -81,16 +85,18 @@ export function Footer() {
             <ul className="space-y-4">
               <li className="flex items-start gap-3">
                 <Phone className="h-4 w-4 text-sky-400 mt-0.5 flex-shrink-0" />
-                <span className="text-white/60 text-sm">+233 20 000 0000</span>
+                <span className="text-white/60 text-sm">
+                  0550 583 636 / 0506 402 626
+                </span>
               </li>
               <li className="flex items-start gap-3">
                 <Mail className="h-4 w-4 text-sky-400 mt-0.5 flex-shrink-0" />
-                <span className="text-white/60 text-sm">hello@inspiredminds.gh</span>
+                <span className="text-white/60 text-sm">inspiredmindst@gmail.com</span>
               </li>
               <li className="flex items-start gap-3">
                 <MapPin className="h-4 w-4 text-sky-400 mt-0.5 flex-shrink-0" />
                 <span className="text-white/60 text-sm">
-                  Accra, Greater Accra Region, Ghana
+                  Tamale, Northern Region, Ghana
                 </span>
               </li>
             </ul>

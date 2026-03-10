@@ -3,20 +3,20 @@ import { Phone, Mail, MapPin } from "lucide-react";
 const CONTACT_INFO = [
   {
     icon: Phone,
-    title: "Phone",
-    lines: ["+233 20 000 0000", "+233 30 000 0000"],
+    title: "Call / WhatsApp",
+    lines: ["0550 583 636", "0506 402 626"],
     color: "bg-sky-50 text-sky-600",
   },
   {
     icon: Mail,
     title: "Email",
-    lines: ["hello@inspiredminds.gh", "support@inspiredminds.gh"],
+    lines: ["inspiredmindst@gmail.com"],
     color: "bg-emerald-50 text-emerald-600",
   },
   {
     icon: MapPin,
-    title: "Office",
-    lines: ["Accra, Greater Accra Region", "Ghana"],
+    title: "Location",
+    lines: ["Tamale, Northern Region", "Ghana"],
     color: "bg-violet-50 text-violet-600",
   },
 ];

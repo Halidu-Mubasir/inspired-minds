@@ -28,7 +28,7 @@ export function HeroSection() {
 
           <p className="mt-6 text-lg text-white/75 max-w-xl leading-relaxed">
             We connect students with qualified, vetted tutors for in-home sessions.
-            From Primary to University level — we have the right tutor for every
+            From Nursery to University level — we have the right tutor for every
             subject and every student.
           </p>
 
@@ -60,7 +60,7 @@ export function HeroSection() {
             </div>
             <div className="flex items-center gap-2">
               <div className="h-2 w-2 rounded-full bg-emerald-400" />
-              In-home sessions across Accra
+              In-home sessions across Tamale
             </div>
           </div>
         </div>

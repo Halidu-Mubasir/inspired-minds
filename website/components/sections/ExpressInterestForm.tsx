@@ -115,7 +115,7 @@ export function ExpressInterestForm() {
                 <Input
                   id="phone"
                   type="tel"
-                  placeholder="+233 20 000 0000"
+                  placeholder="e.g. 0550 583 636"
                   {...register("phone")}
                 />
                 {errors.phone && (
