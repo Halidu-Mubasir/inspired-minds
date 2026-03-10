@@ -40,6 +40,9 @@ out/
 .DS_Store
 Thumbs.db
 
+# Claude
+.claude/
+
 # Coverage
 htmlcov/
 .coverage
