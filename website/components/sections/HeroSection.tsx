@@ -14,19 +14,19 @@ export function HeroSection() {
       <div className="absolute bottom-0 left-0 w-80 h-80 rounded-full bg-sky-400/10 blur-3xl translate-y-1/2 -translate-x-1/4" />
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
-        <div className="max-w-3xl">
+        <div className="flex flex-col items-center text-center">
           {/* Tag */}
           <div className="inline-flex items-center gap-2 rounded-full bg-white/10 border border-white/20 px-4 py-1.5 text-sm text-white/80 font-medium mb-6">
             <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
             Ghana&apos;s Premier Home Tutoring Agency
           </div>
 
-          <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl leading-tight">
+          <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl leading-tight max-w-4xl">
             Expert Home Tutoring,{" "}
             <span className="text-sky-400">Tailored for Your Child</span>
           </h1>
 
-          <p className="mt-6 text-lg text-white/75 max-w-xl leading-relaxed">
+          <p className="mt-6 text-lg text-white/75 max-w-2xl leading-relaxed">
             We connect students with qualified, vetted tutors for in-home sessions.
             From Nursery to University level — we have the right tutor for every
             subject and every student.
@@ -49,7 +49,7 @@ export function HeroSection() {
           </div>
 
           {/* Trust indicators */}
-          <div className="mt-12 flex flex-wrap items-center gap-6 text-sm text-white/60">
+          <div className="mt-12 flex flex-wrap justify-center items-center gap-6 text-sm text-white/60">
             <div className="flex items-center gap-2">
               <div className="h-2 w-2 rounded-full bg-emerald-400" />
               All tutors fully vetted
