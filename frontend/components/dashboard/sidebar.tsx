@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard, Users, UserCheck, Link2, BookOpen, FileText,
+  LayoutDashboard, Users, UserCheck, Link2, BookOpen, FileText, ClipboardCheck,
   MessageSquare, Bot, Library, LogOut, Settings, GraduationCap, Brain,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -30,6 +30,7 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     { label: "My Students", href: "/teacher/students", icon: GraduationCap },
     { label: "Lessons", href: "/teacher/lessons", icon: BookOpen },
     { label: "Resources", href: "/teacher/resources", icon: FileText },
+    { label: "Quizzes", href: "/teacher/quizzes", icon: ClipboardCheck },
     { label: "Chat", href: "/teacher/chat", icon: MessageSquare },
     { label: "AI Tools", href: "/teacher/ai-tools", icon: Brain },
   ],
@@ -38,6 +39,7 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     { label: "My Lessons", href: "/student/lessons", icon: BookOpen },
     { label: "Resources", href: "/student/resources", icon: FileText },
     { label: "Library", href: "/student/library", icon: Library },
+    { label: "Quizzes", href: "/student/quizzes", icon: ClipboardCheck },
     { label: "Chat", href: "/student/chat", icon: MessageSquare },
     { label: "AI Chatbot", href: "/student/ai-chatbot", icon: Bot },
   ],

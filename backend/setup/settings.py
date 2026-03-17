@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     "pairings",
     "lessons",
     "resources",
+    "quizzes",
 ]
 
 MIDDLEWARE = [
