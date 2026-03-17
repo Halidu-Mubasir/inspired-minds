@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -15,16 +15,24 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { SubjectsMultiSelect } from "@/components/admin/subjects-multi-select";
 import { usersApi } from "@/lib/api/users";
 import type { User } from "@/lib/api/users";
 
-const educationLevels = [
-  { value: "primary", label: "Primary" },
-  { value: "jhs", label: "JHS" },
-  { value: "shs", label: "SHS" },
+const EDUCATION_LEVELS = [
+  { value: "primary",    label: "Primary" },
+  { value: "jhs",        label: "JHS" },
+  { value: "shs",        label: "SHS" },
   { value: "university", label: "University" },
-  { value: "other", label: "Other" },
+  { value: "other",      label: "Other" },
 ];
+
+const GRADE_OPTIONS: Record<string, string[]> = {
+  primary:    ["Primary 1", "Primary 2", "Primary 3", "Primary 4", "Primary 5", "Primary 6"],
+  jhs:        ["JHS 1", "JHS 2", "JHS 3"],
+  shs:        ["SHS 1", "SHS 2", "SHS 3"],
+  university: ["Level 100", "Level 200", "Level 300", "Level 400", "Level 500", "Level 600"],
+};
 
 const schema = z.object({
   email: z.string().email("Invalid email"),
@@ -35,7 +43,7 @@ const schema = z.object({
   education_level: z.string().min(1, "Required"),
   school_name: z.string().optional(),
   grade_or_year: z.string().optional(),
-  subjects_of_interest: z.string().optional(),
+  subjects_of_interest: z.array(z.string()).optional(),
   parent_guardian_name: z.string().optional(),
   parent_guardian_phone: z.string().optional(),
   parent_guardian_email: z.string().optional(),
@@ -57,28 +65,31 @@ export function AddStudentSheet({ open, onClose, onCreated }: AddStudentSheetPro
     defaultValues: {
       email: "", first_name: "", last_name: "", phone_number: "",
       password: "", education_level: "", school_name: "", grade_or_year: "",
-      subjects_of_interest: "", parent_guardian_name: "",
+      subjects_of_interest: [], parent_guardian_name: "",
       parent_guardian_phone: "", parent_guardian_email: "",
     },
   });
 
+  const educationLevel = form.watch("education_level");
+
+  // Reset grade/year whenever education level changes
+  useEffect(() => {
+    form.setValue("grade_or_year", "");
+  }, [educationLevel, form]);
+
   async function onSubmit(values: FormValues) {
     setLoading(true);
     try {
-      const subjects = values.subjects_of_interest
-        ? values.subjects_of_interest.split(",").map((s) => s.trim()).filter(Boolean)
-        : [];
-
       const payload: Record<string, unknown> = {
         email: values.email,
         first_name: values.first_name,
         last_name: values.last_name,
         password: values.password,
         education_level: values.education_level,
+        subjects_of_interest: values.subjects_of_interest ?? [],
         ...(values.phone_number && { phone_number: values.phone_number }),
         ...(values.school_name && { school_name: values.school_name }),
         ...(values.grade_or_year && { grade_or_year: values.grade_or_year }),
-        subjects_of_interest: subjects,
         ...(values.parent_guardian_name && { parent_guardian_name: values.parent_guardian_name }),
         ...(values.parent_guardian_phone && { parent_guardian_phone: values.parent_guardian_phone }),
         ...(values.parent_guardian_email && { parent_guardian_email: values.parent_guardian_email }),
@@ -150,7 +161,7 @@ export function AddStudentSheet({ open, onClose, onCreated }: AddStudentSheetPro
                     <SelectTrigger><SelectValue placeholder="Select level" /></SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {educationLevels.map((l) => (
+                    {EDUCATION_LEVELS.map((l) => (
                       <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
                     ))}
                   </SelectContent>
@@ -166,18 +177,49 @@ export function AddStudentSheet({ open, onClose, onCreated }: AddStudentSheetPro
                   <FormMessage />
                 </FormItem>
               )} />
-              <FormField control={form.control} name="grade_or_year" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Grade / Year</FormLabel>
-                  <FormControl><Input placeholder="e.g. Form 3" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
+              <FormField control={form.control} name="grade_or_year" render={({ field }) => {
+                const gradeOptions = educationLevel ? GRADE_OPTIONS[educationLevel] : null;
+                const isOther = educationLevel === "other";
+                return (
+                  <FormItem>
+                    <FormLabel>Grade / Year</FormLabel>
+                    {isOther ? (
+                      <FormControl>
+                        <Input placeholder="Enter grade or year" {...field} />
+                      </FormControl>
+                    ) : gradeOptions ? (
+                      <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                        <FormControl>
+                          <SelectTrigger><SelectValue placeholder="Select grade" /></SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {gradeOptions.map((g) => (
+                            <SelectItem key={g} value={g}>{g}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Select disabled>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select education level first" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent />
+                      </Select>
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                );
+              }} />
             </div>
             <FormField control={form.control} name="subjects_of_interest" render={({ field }) => (
               <FormItem>
-                <FormLabel>Subjects (comma-separated)</FormLabel>
-                <FormControl><Input placeholder="Math, English" {...field} /></FormControl>
+                <FormLabel>Subjects of Interest</FormLabel>
+                <SubjectsMultiSelect
+                  value={field.value ?? []}
+                  onChange={field.onChange}
+                />
                 <FormMessage />
               </FormItem>
             )} />

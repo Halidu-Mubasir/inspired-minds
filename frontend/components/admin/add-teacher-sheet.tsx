@@ -13,8 +13,36 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
 } from "@/components/ui/form";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { SubjectsMultiSelect } from "@/components/admin/subjects-multi-select";
 import { usersApi } from "@/lib/api/users";
 import type { User } from "@/lib/api/users";
+
+// ── Qualification options ─────────────────────────────────────────────────────
+
+const DEGREE_OPTIONS = [
+  "BSc", "BA", "BEd", "HND", "Diploma", "Certificate",
+  "MSc", "MA", "MEd", "MBA", "PhD", "Other",
+];
+
+const COURSE_OPTIONS = [
+  "Mathematics",
+  "English / Literature",
+  "Science",
+  "Physics",
+  "Chemistry",
+  "Biology",
+  "Economics / Business",
+  "Computer Science / ICT",
+  "History / Social Studies",
+  "Geography",
+  "French / Languages",
+  "Education / Pedagogy",
+  "Accounting / Finance",
+  "Other",
+];
 
 const schema = z.object({
   email: z.string().email("Invalid email"),
@@ -22,8 +50,11 @@ const schema = z.object({
   last_name: z.string().min(1, "Required"),
   phone_number: z.string().optional(),
   password: z.string().min(8, "At least 8 characters"),
-  subjects: z.string().optional(),
-  qualifications: z.string().optional(),
+  subjects: z.array(z.string()).optional(),
+  qualification_degree: z.string().optional(),
+  qualification_course: z.string().optional(),
+  custom_degree: z.string().optional(),
+  custom_course: z.string().optional(),
   bio: z.string().optional(),
   years_of_experience: z.string().optional(),
   hourly_rate: z.string().optional(),
@@ -44,17 +75,26 @@ export function AddTeacherSheet({ open, onClose, onCreated }: AddTeacherSheetPro
     resolver: zodResolver(schema),
     defaultValues: {
       email: "", first_name: "", last_name: "", phone_number: "",
-      password: "", subjects: "", qualifications: "", bio: "",
-      years_of_experience: "0", hourly_rate: "",
+      password: "", subjects: [], qualification_degree: "",
+      qualification_course: "", custom_degree: "", custom_course: "",
+      bio: "", years_of_experience: "0", hourly_rate: "",
     },
   });
+
+  const qualDegree = form.watch("qualification_degree");
+  const qualCourse = form.watch("qualification_course");
 
   async function onSubmit(values: FormValues) {
     setLoading(true);
     try {
-      const subjects = values.subjects
-        ? values.subjects.split(",").map((s) => s.trim()).filter(Boolean)
-        : [];
+      // Build qualifications string: e.g. "BSc Mathematics"
+      const degree = values.qualification_degree === "Other"
+        ? values.custom_degree
+        : values.qualification_degree;
+      const course = values.qualification_course === "Other"
+        ? values.custom_course
+        : values.qualification_course;
+      const qualifications = [degree, course].filter(Boolean).join(" ");
 
       const payload: Record<string, unknown> = {
         email: values.email,
@@ -62,8 +102,8 @@ export function AddTeacherSheet({ open, onClose, onCreated }: AddTeacherSheetPro
         last_name: values.last_name,
         password: values.password,
         ...(values.phone_number && { phone_number: values.phone_number }),
-        subjects,
-        ...(values.qualifications && { qualifications: values.qualifications }),
+        subjects: values.subjects ?? [],
+        ...(qualifications && { qualifications }),
         ...(values.bio && { bio: values.bio }),
         ...(values.years_of_experience !== undefined && values.years_of_experience !== "" && { years_of_experience: Number(values.years_of_experience) }),
         ...(values.hourly_rate && { hourly_rate: values.hourly_rate }),
@@ -127,13 +167,19 @@ export function AddTeacherSheet({ open, onClose, onCreated }: AddTeacherSheetPro
                 <FormMessage />
               </FormItem>
             )} />
+
+            {/* Subjects multi-select */}
             <FormField control={form.control} name="subjects" render={({ field }) => (
               <FormItem>
-                <FormLabel>Subjects (comma-separated)</FormLabel>
-                <FormControl><Input placeholder="Math, Physics, Chemistry" {...field} /></FormControl>
+                <FormLabel>Subjects</FormLabel>
+                <SubjectsMultiSelect
+                  value={field.value ?? []}
+                  onChange={field.onChange}
+                />
                 <FormMessage />
               </FormItem>
             )} />
+
             <div className="grid grid-cols-2 gap-3">
               <FormField control={form.control} name="years_of_experience" render={({ field }) => (
                 <FormItem>
@@ -150,13 +196,61 @@ export function AddTeacherSheet({ open, onClose, onCreated }: AddTeacherSheetPro
                 </FormItem>
               )} />
             </div>
-            <FormField control={form.control} name="qualifications" render={({ field }) => (
+
+            {/* Qualification — Degree */}
+            <FormField control={form.control} name="qualification_degree" render={({ field }) => (
               <FormItem>
-                <FormLabel>Qualifications</FormLabel>
-                <FormControl><Input placeholder="BSc Mathematics, UG" {...field} /></FormControl>
+                <FormLabel>Qualification — Degree</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                  <FormControl>
+                    <SelectTrigger><SelectValue placeholder="Select degree" /></SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {DEGREE_OPTIONS.map((d) => (
+                      <SelectItem key={d} value={d}>{d}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )} />
+            {qualDegree === "Other" && (
+              <FormField control={form.control} name="custom_degree" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Specify Degree</FormLabel>
+                  <FormControl><Input placeholder="e.g. HNC" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+            )}
+
+            {/* Qualification — Course / Field of Study */}
+            <FormField control={form.control} name="qualification_course" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Field of Study</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                  <FormControl>
+                    <SelectTrigger><SelectValue placeholder="Select field of study" /></SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {COURSE_OPTIONS.map((c) => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )} />
+            {qualCourse === "Other" && (
+              <FormField control={form.control} name="custom_course" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Specify Field of Study</FormLabel>
+                  <FormControl><Input placeholder="e.g. Agricultural Science" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+            )}
+
             <FormField control={form.control} name="bio" render={({ field }) => (
               <FormItem>
                 <FormLabel>Bio (optional)</FormLabel>
