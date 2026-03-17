@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     "lessons",
     "resources",
     "quizzes",
+    "ai_chat",
 ]
 
 MIDDLEWARE = [
