@@ -28,6 +28,9 @@ export function useChat(conversationId: string | null, currentUserId?: string): 
   const reconnectAttemptsRef = useRef(0);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const conversationIdRef = useRef<string | null>(null);
+  // Keep currentUserId in a ref so connect() never needs it as a dep
+  const currentUserIdRef = useRef(currentUserId);
+  useEffect(() => { currentUserIdRef.current = currentUserId; }, [currentUserId]);
 
   // Load message history
   const loadHistory = useCallback(async (convId: string, pageNum: number) => {
@@ -85,7 +88,7 @@ export function useChat(conversationId: string | null, currentUserId?: string): 
           setMessages((prev) => [...prev, data.message]);
         } else if (data.type === "typing") {
           // Only show indicator if it's from the other user
-          if (data.user_id !== currentUserId) {
+          if (data.user_id !== currentUserIdRef.current) {
             setOtherUserTyping(data.is_typing);
             if (data.is_typing) {
               if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
@@ -93,10 +96,10 @@ export function useChat(conversationId: string | null, currentUserId?: string): 
             }
           }
         } else if (data.type === "read") {
-          if (data.user_id !== currentUserId) {
+          if (data.user_id !== currentUserIdRef.current) {
             setMessages((prev) =>
               prev.map((m) =>
-                m.sender.id === currentUserId ? { ...m, is_read: true } : m
+                m.sender.id === currentUserIdRef.current ? { ...m, is_read: true } : m
               )
             );
           }
@@ -105,7 +108,7 @@ export function useChat(conversationId: string | null, currentUserId?: string): 
         // ignore parse errors
       }
     };
-  }, [currentUserId]);
+  }, []);
 
   // Switch conversation
   useEffect(() => {
