@@ -7,10 +7,10 @@ import { Textarea } from "@/components/ui/textarea";
 interface MessageInputProps {
   onSend: (content: string) => void;
   onTyping: (isTyping: boolean) => void;
-  disabled?: boolean;
+  sendDisabled?: boolean;
 }
 
-export function MessageInput({ onSend, onTyping, disabled }: MessageInputProps) {
+export function MessageInput({ onSend, onTyping, sendDisabled }: MessageInputProps) {
   const [value, setValue] = useState("");
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isTypingRef = useRef(false);
@@ -65,13 +65,12 @@ export function MessageInput({ onSend, onTyping, disabled }: MessageInputProps) 
         placeholder="Type a message… (Enter to send, Shift+Enter for new line)"
         className="flex-1 resize-none min-h-[40px] max-h-32 text-sm"
         rows={1}
-        disabled={disabled}
       />
       <Button
         size="icon"
         className="h-10 w-10 flex-shrink-0"
         onClick={handleSend}
-        disabled={disabled || !value.trim()}
+        disabled={sendDisabled || !value.trim()}
       >
         <Send className="h-4 w-4" />
       </Button>

@@ -148,7 +148,7 @@ export function ChatPage() {
                 sendMessage(content);
               }}
               onTyping={sendTyping}
-              disabled={!isConnected}
+              sendDisabled={!isConnected}
             />
           </>
         ) : (
