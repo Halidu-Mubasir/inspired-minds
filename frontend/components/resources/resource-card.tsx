@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import {
-  FileText, FileSpreadsheet, Image, File, Download, Trash2, BookOpen, ClipboardList,
+  FileText, FileSpreadsheet, Image as ImageIcon, File, Download, Trash2, BookOpen, ClipboardList,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -12,15 +12,16 @@ import { getErrorMessage } from "@/lib/api/errors";
 import { resourcesApi, RESOURCE_TYPE_LABELS } from "@/lib/api/resources";
 import type { Resource, ResourceType } from "@/lib/api/resources";
 
-function getFileIcon(mimeType: string, resourceType: ResourceType) {
-  if (mimeType.startsWith("image/")) return Image;
+function FileIcon({ mimeType, resourceType }: { mimeType: string; resourceType: ResourceType }) {
+  const className = "h-5 w-5 text-muted-foreground";
+  if (mimeType.startsWith("image/")) return <ImageIcon className={className} />;
   if (mimeType.includes("spreadsheet") || mimeType.includes("excel") || resourceType === "worksheet")
-    return FileSpreadsheet;
-  if (resourceType === "past_question" || resourceType === "answer_sheet") return ClipboardList;
-  if (resourceType === "note") return BookOpen;
+    return <FileSpreadsheet className={className} />;
+  if (resourceType === "past_question" || resourceType === "answer_sheet") return <ClipboardList className={className} />;
+  if (resourceType === "note") return <BookOpen className={className} />;
   if (mimeType.includes("pdf") || mimeType.includes("word") || mimeType.includes("document"))
-    return FileText;
-  return File;
+    return <FileText className={className} />;
+  return <File className={className} />;
 }
 
 const typeColors: Record<ResourceType, string> = {
@@ -40,7 +41,6 @@ interface ResourceCardProps {
 export function ResourceCard({ resource, canDelete = false, onDeleted }: ResourceCardProps) {
   const [deleting, setDeleting] = useState(false);
   const [downloading, setDownloading] = useState(false);
-  const Icon = getFileIcon(resource.mime_type, resource.resource_type);
 
   async function handleDownload() {
     setDownloading(true);
@@ -72,7 +72,7 @@ export function ResourceCard({ resource, canDelete = false, onDeleted }: Resourc
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
           <div className="bg-muted rounded-lg p-2.5 flex-shrink-0">
-            <Icon className="h-5 w-5 text-muted-foreground" />
+            <FileIcon mimeType={resource.mime_type} resourceType={resource.resource_type} />
           </div>
 
           <div className="flex-1 min-w-0">

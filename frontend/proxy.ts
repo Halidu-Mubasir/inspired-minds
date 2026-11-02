@@ -4,7 +4,7 @@ import { AUTH_COOKIES, ROLE_DASHBOARDS } from "@/lib/constants";
 
 const PUBLIC_ROUTES = ["/login", "/forgot-password", "/reset-password"];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Allow public routes

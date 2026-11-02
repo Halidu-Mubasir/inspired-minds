@@ -6,7 +6,7 @@ Learning Management System for Inspired Minds Home Tuition Agency. Manages teach
 ## Architecture
 - **Monorepo** with two sub-projects:
   - `backend/` — Django 5.x REST API + Django Channels WebSocket
-  - `frontend/` — Next.js 15 + TypeScript + Tailwind CSS + shadcn/ui
+  - `frontend/` — Next.js 16 (same version as `website/`) + TypeScript + Tailwind CSS + shadcn/ui
 - **Database**: PostgreSQL
 - **Real-time**: Django Channels + Redis (WebSocket chat)
 - **File storage**: Local filesystem (Django media/)
@@ -64,7 +64,7 @@ daphne -b 0.0.0.0 -p 8000 setup.asgi:application  # ASGI server (for WebSocket)
 ### Next.js Structure
 - App Router with route groups: `(auth)/` (public) and `(dashboard)/` (protected)
 - Role-based sub-routes: `admin/`, `teacher/`, `student/`
-- `middleware.ts` handles JWT verification + role-based route protection
+- `proxy.ts` (Next 16's renamed middleware) gates routes by session cookie + role; the API is the real access check
 - Components organized by domain: `components/auth/`, `components/admin/`, etc.
 
 ### UI Conventions
@@ -79,7 +79,7 @@ daphne -b 0.0.0.0 -p 8000 setup.asgi:application  # ASGI server (for WebSocket)
 
 ### API Client Pattern
 - All API calls in `lib/api/` modules (auth.ts, users.ts, pairings.ts, etc.)
-- JWT tokens stored in localStorage; cookies hold only session expiry + role for `middleware.ts` route gating
+- JWT tokens stored in localStorage; cookies hold only session expiry + role for `proxy.ts` route gating
 - Access tokens last 30 min; `lib/api/client.ts` refreshes them (single-flight, and on 401). Refresh tokens rotate and are blacklisted on logout/password change
 - Base URL from `NEXT_PUBLIC_API_URL` env var
 

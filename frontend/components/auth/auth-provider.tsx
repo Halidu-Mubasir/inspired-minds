@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -24,17 +24,18 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+const subscribeToNothing = () => () => {};
+
 /** One shared copy of the signed-in user for the whole app. */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<UserData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // The user lives in localStorage, which the server can't read. Until hydration finishes,
+  // report "loading" so the server render and the first client render match.
+  const isClient = useSyncExternalStore(subscribeToNothing, () => true, () => false);
+  const [storedUser, setUser] = useState<UserData | null>(getStoredUser);
+  const user = isClient ? storedUser : null;
+  const isLoading = !isClient;
   const router = useRouter();
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    setUser(getStoredUser());
-    setIsLoading(false);
-  }, []);
 
   const login = useCallback(
     async (credentials: LoginPayload) => {
