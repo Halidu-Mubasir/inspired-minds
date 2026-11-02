@@ -1,30 +1,27 @@
 "use client";
 import { useState } from "react";
 import {
-  FileText, FileSpreadsheet, Image, File, Download, Trash2, BookOpen, ClipboardList,
+  FileText, FileSpreadsheet, Image as ImageIcon, File, Download, Trash2, BookOpen, ClipboardList,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { formatFileSize } from "@/lib/utils";
+import { getErrorMessage } from "@/lib/api/errors";
 import { resourcesApi, RESOURCE_TYPE_LABELS } from "@/lib/api/resources";
 import type { Resource, ResourceType } from "@/lib/api/resources";
 
-function formatFileSize(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function getFileIcon(mimeType: string, resourceType: ResourceType) {
-  if (mimeType.startsWith("image/")) return Image;
+function FileIcon({ mimeType, resourceType }: { mimeType: string; resourceType: ResourceType }) {
+  const className = "h-5 w-5 text-muted-foreground";
+  if (mimeType.startsWith("image/")) return <ImageIcon className={className} />;
   if (mimeType.includes("spreadsheet") || mimeType.includes("excel") || resourceType === "worksheet")
-    return FileSpreadsheet;
-  if (resourceType === "past_question" || resourceType === "answer_sheet") return ClipboardList;
-  if (resourceType === "note") return BookOpen;
+    return <FileSpreadsheet className={className} />;
+  if (resourceType === "past_question" || resourceType === "answer_sheet") return <ClipboardList className={className} />;
+  if (resourceType === "note") return <BookOpen className={className} />;
   if (mimeType.includes("pdf") || mimeType.includes("word") || mimeType.includes("document"))
-    return FileText;
-  return File;
+    return <FileText className={className} />;
+  return <File className={className} />;
 }
 
 const typeColors: Record<ResourceType, string> = {
@@ -43,7 +40,18 @@ interface ResourceCardProps {
 
 export function ResourceCard({ resource, canDelete = false, onDeleted }: ResourceCardProps) {
   const [deleting, setDeleting] = useState(false);
-  const Icon = getFileIcon(resource.mime_type, resource.resource_type);
+  const [downloading, setDownloading] = useState(false);
+
+  async function handleDownload() {
+    setDownloading(true);
+    try {
+      await resourcesApi.download(resource);
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to download file"));
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   async function handleDelete() {
     if (!confirm(`Delete "${resource.title}"?`)) return;
@@ -52,8 +60,8 @@ export function ResourceCard({ resource, canDelete = false, onDeleted }: Resourc
       await resourcesApi.delete(resource.id);
       toast.success("Resource deleted");
       onDeleted?.(resource.id);
-    } catch {
-      toast.error("Failed to delete resource");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to delete resource"));
     } finally {
       setDeleting(false);
     }
@@ -64,7 +72,7 @@ export function ResourceCard({ resource, canDelete = false, onDeleted }: Resourc
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
           <div className="bg-muted rounded-lg p-2.5 flex-shrink-0">
-            <Icon className="h-5 w-5 text-muted-foreground" />
+            <FileIcon mimeType={resource.mime_type} resourceType={resource.resource_type} />
           </div>
 
           <div className="flex-1 min-w-0">
@@ -86,16 +94,15 @@ export function ResourceCard({ resource, canDelete = false, onDeleted }: Resourc
         </div>
 
         <div className="flex gap-2 mt-3">
-          <a
-            href={resourcesApi.getDownloadUrl(resource.id)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex-1"
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex-1 gap-1.5 text-xs"
+            onClick={handleDownload}
+            disabled={downloading}
           >
-            <Button size="sm" variant="outline" className="w-full gap-1.5 text-xs">
-              <Download className="h-3.5 w-3.5" /> Download
-            </Button>
-          </a>
+            <Download className="h-3.5 w-3.5" /> {downloading ? "Downloading..." : "Download"}
+          </Button>
           {canDelete && (
             <Button
               size="sm"

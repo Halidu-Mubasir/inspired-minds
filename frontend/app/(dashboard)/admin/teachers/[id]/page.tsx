@@ -1,62 +1,39 @@
 "use client";
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Mail, Phone, MapPin } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { useParams } from "next/navigation";
+import { Mail, Phone, MapPin } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { UserDetailToolbar } from "@/components/admin/user-detail-toolbar";
+import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { PairingHistoryCard } from "@/components/admin/pairing-history-card";
+import { DetailPageError, DetailPageSkeleton } from "@/components/shared/detail-page-states";
 import { getInitials, formatDate } from "@/lib/utils";
 import { usersApi } from "@/lib/api/users";
 import { pairingsApi } from "@/lib/api/pairings";
-import type { User } from "@/lib/api/users";
-import type { Pairing } from "@/lib/api/pairings";
+import { queryKeys } from "@/lib/query-keys";
 
 export default function TeacherDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const router = useRouter();
-  const [teacher, setTeacher] = useState<User | null>(null);
-  const [pairings, setPairings] = useState<Pairing[]>([]);
-  const [loading, setLoading] = useState(true);
+  const teacherQuery = useQuery({ queryKey: queryKeys.teachers.detail(id), queryFn: () => usersApi.getTeacher(id) });
+  const pairingParams = { teacher: id, page_size: "100" };
+  const pairingsQuery = useQuery({
+    queryKey: queryKeys.pairings.list(pairingParams),
+    queryFn: () => pairingsApi.getAll(pairingParams),
+  });
 
-  useEffect(() => {
-    Promise.all([
-      usersApi.getTeacher(id),
-      pairingsApi.getAll({ teacher: id }),
-    ])
-      .then(([user, pairingData]) => {
-        setTeacher(user);
-        setPairings(pairingData.results);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [id]);
-
-  if (loading) {
-    return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-40" />
-        <Skeleton className="h-48 rounded-xl" />
-        <Skeleton className="h-64 rounded-xl" />
-      </div>
-    );
+  if (teacherQuery.isPending) return <DetailPageSkeleton />;
+  if (teacherQuery.isError) {
+    return <DetailPageError error={teacherQuery.error} noun="Teacher" onRetry={() => teacherQuery.refetch()} />;
   }
 
-  if (!teacher) {
-    return (
-      <div className="text-center py-16 text-muted-foreground">Teacher not found.</div>
-    );
-  }
-
+  const teacher = teacherQuery.data;
   const profile = teacher.teacher_profile;
 
   return (
     <div className="space-y-5 max-w-3xl">
-      <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => router.back()}>
-        <ArrowLeft className="h-4 w-4" /> Back
-      </Button>
+      <UserDetailToolbar user={teacher} role="teacher" />
 
       {/* Profile Card */}
       <Card>
@@ -152,46 +129,12 @@ export default function TeacherDetailPage() {
         </CardContent>
       </Card>
 
-      {/* Pairings Table */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Pairings ({pairings.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {pairings.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">No pairings yet.</p>
-          ) : (
-            <div className="space-y-2">
-              {pairings.map((p) => (
-                <div
-                  key={p.id}
-                  className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50 text-sm"
-                >
-                  <div>
-                    <span className="font-medium">{p.student.first_name} {p.student.last_name}</span>
-                    <span className="text-muted-foreground ml-2">· {p.subject}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-muted-foreground">{formatDate(p.start_date)}</span>
-                    <Badge
-                      className={
-                        p.status === "active"
-                          ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-100 text-xs"
-                          : p.status === "paused"
-                          ? "bg-amber-100 text-amber-700 hover:bg-amber-100 text-xs"
-                          : "text-xs"
-                      }
-                      variant={p.status === "ended" ? "secondary" : "default"}
-                    >
-                      {p.status}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <PairingHistoryCard
+        pairings={pairingsQuery.data?.results}
+        counterpart="student"
+        isLoading={pairingsQuery.isPending}
+        isError={pairingsQuery.isError}
+      />
     </div>
   );
 }

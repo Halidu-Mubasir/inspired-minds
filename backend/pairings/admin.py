@@ -9,7 +9,10 @@ class TeacherStudentPairingAdmin(admin.ModelAdmin):
     search_fields = [
         "teacher__first_name", "teacher__last_name",
         "student__first_name", "student__last_name",
-        "subject",
+        "subject__name",
     ]
     ordering = ["-created_at"]
     raw_id_fields = ["teacher", "student", "created_by"]
+
+    def has_delete_permission(self, request, obj=None):
+        return False  # end a pairing (status=ended) instead; it carries lessons and chat history

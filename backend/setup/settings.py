@@ -1,8 +1,14 @@
+import sys
+import warnings
 from pathlib import Path
 from datetime import timedelta
 from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+RUNNING_TESTS = len(sys.argv) > 1 and sys.argv[1] == "test"
+if RUNNING_TESTS:
+    # Tests don't run collectstatic; whitenoise would warn about the missing STATIC_ROOT on every request.
+    warnings.filterwarnings("ignore", message="No directory at: ")
 
 SECRET_KEY = config("SECRET_KEY")
 DEBUG = config("DEBUG", default=False, cast=bool)
@@ -18,20 +24,25 @@ INSTALLED_APPS = [
     # Third-party
     "rest_framework",
     "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "django_filters",
     "drf_yasg",
     "channels",
     # Local apps
+    "subjects",
     "chat",
     "users",
     "pairings",
     "lessons",
     "resources",
+    "enquiries",
+    "ai_services",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # serves collected static files (admin, API docs)
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -94,6 +105,11 @@ CHANNEL_LAYERS = {
     }
 }
 
+# Rate limits (DRF throttles) are counted in the cache. The default per-process memory cache
+# is fine for one dev server; with several workers set USE_REDIS_CACHE so they share counts.
+if config("USE_REDIS_CACHE", default=False, cast=bool):
+    CACHES = {"default": {"BACKEND": "django.core.cache.backends.redis.RedisCache", "LOCATION": REDIS_URL}}
+
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
@@ -108,9 +124,15 @@ USE_TZ = True
 
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
+}
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+# Access-controlled uploads (resources). Must never be served by the web server.
+PRIVATE_MEDIA_ROOT = config("PRIVATE_MEDIA_ROOT", default=str(BASE_DIR / "private_media"))
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "users.CustomUser"
@@ -130,14 +152,24 @@ REST_FRAMEWORK = {
         "rest_framework.filters.SearchFilter",
         "rest_framework.filters.OrderingFilter",
     ],
+    "DEFAULT_THROTTLE_RATES": {
+        # Public website forms, per client IP.
+        "enquiries": config("ENQUIRY_THROTTLE_RATE", default="10/hour"),
+        "login": config("LOGIN_THROTTLE_RATE", default="10/minute"),
+        "password_reset": config("PASSWORD_RESET_THROTTLE_RATE", default="5/hour"),
+    },
+    # Behind a reverse proxy, the number of proxies in front of Django, so throttles use the
+    # real client IP from X-Forwarded-For instead of the proxy's address.
+    "NUM_PROXIES": config("NUM_PROXIES", default=None, cast=lambda v: int(v) if v not in (None, "") else None),
 }
 
-# JWT
+# JWT — short-lived access tokens; the client refreshes them silently.
+# Refresh tokens rotate on use and are blacklisted on rotation, logout and password change.
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=60),
     "ROTATE_REFRESH_TOKENS": True,
-    "BLACKLIST_AFTER_ROTATION": False,
+    "BLACKLIST_AFTER_ROTATION": True,
     "UPDATE_LAST_LOGIN": True,
     "ALGORITHM": "HS256",
     "AUTH_HEADER_TYPES": ("Bearer",),
@@ -145,11 +177,59 @@ SIMPLE_JWT = {
     "USER_ID_CLAIM": "user_id",
 }
 
+# Email — console backend prints messages in dev; set EMAIL_BACKEND to
+# django.core.mail.backends.smtp.EmailBackend (with the EMAIL_* settings) in production.
+EMAIL_BACKEND = config("EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")
+EMAIL_HOST = config("EMAIL_HOST", default="localhost")
+EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
+EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
+DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="Inspired Minds <no-reply@inspiredminds.local>")
+
+# Password reset links point at the LMS frontend and expire after two hours.
+FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:3000")
+PASSWORD_RESET_TIMEOUT = 2 * 60 * 60
+
 # CORS
 CORS_ALLOWED_ORIGINS = config(
     "CORS_ALLOWED_ORIGINS", default="http://localhost:3000"
 ).split(",")
 CORS_ALLOW_CREDENTIALS = True
+# Origins allowed to POST to the Django admin over HTTPS (e.g. https://api.example.com).
+CSRF_TRUSTED_ORIGINS = [o for o in config("CSRF_TRUSTED_ORIGINS", default="").split(",") if o]
+
+# Interactive API docs are for development; set EXPOSE_API_DOCS to publish them elsewhere.
+EXPOSE_API_DOCS = config("EXPOSE_API_DOCS", default=DEBUG, cast=bool)
+
+# Production hardening, on whenever DEBUG is off. Deploy behind a TLS-terminating proxy that
+# sets X-Forwarded-Proto; set SECURE_SSL_REDIRECT=False only for local plain-HTTP runs.
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    # The test client speaks plain HTTP, so `manage.py test` must not redirect to HTTPS.
+    SECURE_SSL_REDIRECT = config("SECURE_SSL_REDIRECT", default=not RUNNING_TESTS, cast=bool)
+    SECURE_REDIRECT_EXEMPT = [r"^healthz/$"]  # container health checks speak plain HTTP
+    SESSION_COOKIE_SECURE = config("SESSION_COOKIE_SECURE", default=True, cast=bool)
+    CSRF_COOKIE_SECURE = config("CSRF_COOKIE_SECURE", default=True, cast=bool)
+    # Start modestly; raise to a year (31536000) once HTTPS is known to work everywhere.
+    SECURE_HSTS_SECONDS = config("SECURE_HSTS_SECONDS", default=60 * 60 * 24 * 30, cast=int)
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = config("SECURE_HSTS_INCLUDE_SUBDOMAINS", default=True, cast=bool)
+    SECURE_HSTS_PRELOAD = config("SECURE_HSTS_PRELOAD", default=False, cast=bool)
+    X_FRAME_OPTIONS = "DENY"
+
+# Joining the browser HSTS preload list is a hard-to-undo opt-in, not a default; don't let
+# `check --deploy` (which CI runs with --fail-level WARNING) fail for leaving it off.
+SILENCED_SYSTEM_CHECKS = ["security.W021"]
+
+# AI (ai_services). AI features stay switched off (HTTP 503) until ANTHROPIC_API_KEY is set.
+AI_PROVIDER = config("AI_PROVIDER", default="anthropic")
+AI_MODEL = config("AI_MODEL", default="claude-sonnet-5-5")
+ANTHROPIC_API_KEY = config("ANTHROPIC_API_KEY", default="")
+# Daily caps per user, reset at local midnight (TIME_ZONE).
+AI_DAILY_TUTOR_MESSAGES = config("AI_DAILY_TUTOR_MESSAGES", default=50, cast=int)
+AI_DAILY_TEACHER_TOOL_RUNS = config("AI_DAILY_TEACHER_TOOL_RUNS", default=30, cast=int)
+# Largest resource file the tutor or teacher tools will send to the model.
+AI_MAX_ATTACHMENT_MB = config("AI_MAX_ATTACHMENT_MB", default=20, cast=int)
 
 # Swagger
 SWAGGER_SETTINGS = {
@@ -163,11 +243,6 @@ SWAGGER_SETTINGS = {
     "USE_SESSION_AUTH": False,
 }
 
-# AI
-AI_PROVIDER = config("AI_PROVIDER", default="anthropic")
-AI_MODEL = config("AI_MODEL", default="claude-sonnet-4-20250514")
-ANTHROPIC_API_KEY = config("ANTHROPIC_API_KEY", default="")
-OPENAI_API_KEY = config("OPENAI_API_KEY", default="")
 
 LOGGING = {
     "version": 1,

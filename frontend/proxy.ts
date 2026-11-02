@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { TOKEN_KEYS, ROLE_DASHBOARDS } from "@/lib/constants";
+import { AUTH_COOKIES, ROLE_DASHBOARDS } from "@/lib/constants";
 
 const PUBLIC_ROUTES = ["/login", "/forgot-password", "/reset-password"];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Allow public routes
@@ -12,22 +12,15 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check for access token in cookie (set by login page after localStorage write)
-  // We use a cookie for SSR-compatible auth check
-  const accessToken = request.cookies.get(TOKEN_KEYS.ACCESS)?.value;
-  const userRole = request.cookies.get("inspired_minds_role")?.value;
-  const tokenExp = request.cookies.get(`${TOKEN_KEYS.ACCESS}_exp`)?.value;
+  // Session cookies are set at login and renewed on every token refresh; they hold
+  // the refresh token's expiry and the user's role, not credentials.
+  const sessionExp = request.cookies.get(AUTH_COOKIES.SESSION)?.value;
+  const userRole = request.cookies.get(AUTH_COOKIES.ROLE)?.value;
 
-  // No token: redirect to login
-  if (!accessToken) {
+  // No session, or it has expired: redirect to login
+  if (!sessionExp || Date.now() >= parseInt(sessionExp)) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirect", pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  // Expired token: redirect to login
-  if (tokenExp && Date.now() >= parseInt(tokenExp)) {
-    const loginUrl = new URL("/login", request.url);
     return NextResponse.redirect(loginUrl);
   }
 

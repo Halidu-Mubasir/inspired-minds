@@ -1,5 +1,4 @@
-import { apiRequest } from "./client";
-import { API_BASE_URL, TOKEN_KEYS } from "@/lib/constants";
+import { apiDownload, apiRequest } from "./client";
 import type { PaginatedResponse } from "./users";
 
 export interface ResourceUploaderSummary {
@@ -16,13 +15,13 @@ export interface Resource {
   title: string;
   description: string | null;
   resource_type: ResourceType;
-  subject: string;
+  subject: string | null;
   visibility: ResourceVisibility;
   file_name: string;
   file_size: number;
   mime_type: string;
   file_url?: string;
-  uploaded_by: ResourceUploaderSummary;
+  uploaded_by: ResourceUploaderSummary | null;
   pairing_id: string | null;
   lesson_id: string | null;
   created_at: string;
@@ -73,10 +72,8 @@ export const resourcesApi = {
   delete: (id: string) =>
     apiRequest<void>(`/resources/${id}/`, { method: "DELETE" }),
 
-  getDownloadUrl: (id: string) => {
-    const token = typeof window !== "undefined" ? localStorage.getItem(TOKEN_KEYS.ACCESS) : null;
-    return `${API_BASE_URL}/resources/${id}/download/${token ? `?token=${token}` : ""}`;
-  },
+  download: (resource: Pick<Resource, "id" | "file_name">) =>
+    apiDownload(`/resources/${resource.id}/download/`, resource.file_name),
 
   getLibrary: (params?: Record<string, string>) => {
     const query = params ? `?${new URLSearchParams(params)}` : "";

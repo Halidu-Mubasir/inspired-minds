@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { CheckCircle2 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { FaqSection } from "./FaqSection";
 import { APPLY_FAQ } from "@/lib/data/faq";
+import { submitForm } from "@/lib/api";
 
 const schema = z.object({
   fullName: z.string().min(2, "Full name is required"),
@@ -39,8 +41,15 @@ export function ExpressInterestForm() {
     formState: { errors, isSubmitting },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
 
-  function onSubmit(data: FormData) {
-    console.log("Tutor application:", data);
+  async function onSubmit({ fullName, ...rest }: FormData) {
+    try {
+      await submitForm("/enquiries/tutor-applications/", { full_name: fullName, ...rest });
+    } catch {
+      toast.error("Sorry, your application could not be submitted.", {
+        description: "Please try again shortly, or call or WhatsApp us directly.",
+      });
+      return;
+    }
     setSubmitted(true);
   }
 

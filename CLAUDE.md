@@ -1,22 +1,22 @@
 # Inspired Minds LMS
 
 ## Project Overview
-Learning Management System for Inspired Minds Home Tuition Agency. Manages teachers, students, pairings, lessons, resources, real-time chat, and AI-powered learning tools.
+Learning Management System for Inspired Minds Home Tuition Agency. Manages teachers, students, pairings, lessons, resources, real-time chat and AI learning tools (student tutor chatbot, teacher question generator and notes summariser).
 
 ## Architecture
 - **Monorepo** with two sub-projects:
   - `backend/` — Django 5.x REST API + Django Channels WebSocket
-  - `frontend/` — Next.js 15 + TypeScript + Tailwind CSS + shadcn/ui
+  - `frontend/` — Next.js 16 (same version as `website/`) + TypeScript + Tailwind CSS + shadcn/ui
 - **Database**: PostgreSQL
 - **Real-time**: Django Channels + Redis (WebSocket chat)
 - **File storage**: Local filesystem (Django media/)
-- **AI**: Abstract provider pattern (pluggable Claude/OpenAI/etc.)
+- **AI**: `ai_services` app behind a provider-neutral `BaseChatProvider` (`ai_services/providers/`); the only adapter is Anthropic (`anthropic` SDK pinned to 1.x, model `claude-sonnet-5-5`). Tutor replies stream as NDJSON over HTTP
 - **Auth**: JWT via djangorestframework-simplejwt
 
 ## User Roles
-- **Admin** — Agency staff. Manages teachers, students, pairings. Full platform oversight.
-- **Teacher** — Creates lessons, uploads resources, chats with students, uses AI tools.
-- **Student** — Views lessons/resources, accesses general library, chats with teacher, uses AI chatbot.
+- **Admin** — Agency staff. Manages teachers, students, pairings and the shared library. Full platform oversight.
+- **Teacher** — Creates lessons, uploads resources, chats with students, uses AI tools, reads their students' AI tutor chats.
+- **Student** — Views scheduled lessons and resources, accesses general library, chats with teacher, uses the AI tutor.
 
 ## Backend Conventions (`backend/`)
 
@@ -34,8 +34,10 @@ Learning Management System for Inspired Minds Home Tuition Agency. Manages teach
 | `pairings` | TeacherStudentPairing management |
 | `lessons` | Lesson plans + LessonTopic |
 | `resources` | File uploads (private + general library) |
+| `enquiries` | Public website submissions (contact enquiries, tutor applications); reviewed in Django admin |
+| `subjects` | Curated Subject list used by pairings, resources and profiles |
 | `chat` | Real-time WebSocket chat (Django Channels) |
-| `ai_services` | AI chatbot + tools (abstract provider pattern) |
+| `ai_services` | AI tutor chats + safeguarding flags, teacher tools (questions, summaries), usage records + daily caps |
 
 ### Key Patterns
 - Email-based authentication (USERNAME_FIELD = "email")
@@ -43,7 +45,12 @@ Learning Management System for Inspired Minds Home Tuition Agency. Manages teach
 - Pairing is the central relationship — lessons, resources, conversations hang off it
 - Resource visibility: `private` (student-specific) or `library` (all students)
 - Conversation auto-created when pairing is created
-- AI providers: abstract `BaseChatProvider` ABC with concrete adapters
+- History is never deleted: users are deactivated (`users.services.deactivate_user`, which also pauses their pairings), pairings are ended, subjects are retired (`is_active=False`); FKs onto users/pairings/subjects use `PROTECT`
+- Subjects are exchanged over the API by name (`SubjectNameField`), validated against active `Subject` rows
+- Lesson status changes are limited by `LESSON_STATUS_TRANSITIONS` (completed is final); chat on an ended pairing is read-only
+- Students never see draft lessons (`Lesson.objects.for_user`); a teacher publishes a lesson by scheduling it
+- Admin-set passwords go through Django's `AUTH_PASSWORD_VALIDATORS`, like user-chosen ones
+- AI: views call `get_provider()`, never an SDK directly. Every model call writes an `AIUsage` row; daily caps (`quotas.py`) count those rows. Tutor chats are visible to the student, their actively/paused-paired teachers and admins (`TutorConversation.objects.visible_to`); the tutor flags safety concerns via a tool call, and flags are hidden from students. Files reach the model only if the user can see the resource and it is PDF, image or .txt. Tests use `ai_services/tests/fakes.FakeProvider` — no test calls the real API
 
 ### Running Backend
 ```bash
@@ -51,7 +58,7 @@ cd backend
 python manage.py runserver          # Dev server on :8000
 python manage.py migrate            # Run migrations
 python manage.py createsuperuser    # Create admin user
-daphne -b 0.0.0.0 -p 8000 setup.asgi:application  # ASGI server (for WebSocket)
+daphne -b 0.0.0.0 -p 8000 setup.asgi:application  # ASGI server (for WebSocket and streamed AI tutor replies; runserver buffers the stream)
 ```
 
 ## Frontend Conventions (`frontend/`)
@@ -59,7 +66,7 @@ daphne -b 0.0.0.0 -p 8000 setup.asgi:application  # ASGI server (for WebSocket)
 ### Next.js Structure
 - App Router with route groups: `(auth)/` (public) and `(dashboard)/` (protected)
 - Role-based sub-routes: `admin/`, `teacher/`, `student/`
-- `middleware.ts` handles JWT verification + role-based route protection
+- `proxy.ts` (Next 16's renamed middleware) gates routes by session cookie + role; the API is the real access check
 - Components organized by domain: `components/auth/`, `components/admin/`, etc.
 
 ### UI Conventions
@@ -74,9 +81,16 @@ daphne -b 0.0.0.0 -p 8000 setup.asgi:application  # ASGI server (for WebSocket)
 
 ### API Client Pattern
 - All API calls in `lib/api/` modules (auth.ts, users.ts, pairings.ts, etc.)
-- JWT tokens stored in cookies + localStorage (dual storage)
-- Token refresh handled automatically
+- JWT tokens stored in localStorage; cookies hold only session expiry + role for `proxy.ts` route gating
+- Access tokens last 30 min; `lib/api/client.ts` refreshes them (single-flight, and on 401). Refresh tokens rotate and are blacklisted on logout/password change
 - Base URL from `NEXT_PUBLIC_API_URL` env var
+
+### Data Fetching & State
+- Server data goes through React Query (`@tanstack/react-query`); keys live in `lib/query-keys.ts`, grouped so a prefix (e.g. `queryKeys.pairings.all`) invalidates a whole family. After a mutation, invalidate rather than hand-editing local lists
+- Lists are paginated, searched and filtered server-side (DRF `page`, `search`, filter params) with `PaginationControls` and `useDebouncedValue`; never filter or count only the first page client-side
+- Render `ErrorState` (or `DetailPageError`, which distinguishes 404) for failed queries; don't swallow errors with `.catch(() => {})`. Use `getErrorMessage` from `lib/api/errors.ts` for toasts
+- The signed-in user comes from `useAuth()` (one `AuthProvider` in `components/providers.tsx`)
+- Shared UI: `PairingStatusBadge` / `LessonStatusBadge`, `UserDirectory`, `LessonList`, `ResourceBrowser`; date helpers (`formatDate`, `formatLongDate`, `formatTime`) in `lib/utils.ts` use date-fns
 
 ### Running Frontend
 ```bash
@@ -92,20 +106,41 @@ npm run lint    # ESLint
 ```
 SECRET_KEY=your-secret-key
 DEBUG=True
-DATABASE_URL=postgres://user:pass@localhost:5432/inspired_minds
+USE_POSTGRES=True  # SQLite (backend/db.sqlite3) when False
+DB_NAME=inspired_minds DB_USER=postgres DB_PASSWORD=postgres DB_HOST=localhost DB_PORT=5432
 ALLOWED_HOSTS=localhost,127.0.0.1
-CORS_ALLOWED_ORIGINS=http://localhost:3000
+CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001  # LMS frontend + marketing website
 REDIS_URL=redis://localhost:6379/0
-AI_PROVIDER=anthropic
-AI_MODEL=claude-sonnet-4-20250514
+PRIVATE_MEDIA_ROOT=  # optional; resource uploads, never web-served (default backend/private_media)
+ENQUIRY_THROTTLE_RATE=10/hour  # optional; public website form rate limit per IP
+LOGIN_THROTTLE_RATE=10/minute  # optional; per IP
+PASSWORD_RESET_THROTTLE_RATE=5/hour  # optional; per IP
+FRONTEND_URL=http://localhost:3000  # LMS frontend, used in password reset links
+EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend  # smtp.EmailBackend in production
+EMAIL_HOST= EMAIL_PORT=587 EMAIL_HOST_USER= EMAIL_HOST_PASSWORD= EMAIL_USE_TLS=True
+DEFAULT_FROM_EMAIL=Inspired Minds <no-reply@your-domain>  # sender for password reset emails
+# Production (all take effect when DEBUG=False)
+CSRF_TRUSTED_ORIGINS=https://api.your-domain  # needed for Django admin over HTTPS
+NUM_PROXIES=1  # proxies in front of Django, so rate limits see real client IPs
+USE_REDIS_CACHE=True  # share rate-limit counts across workers
+SECURE_SSL_REDIRECT=True SECURE_HSTS_SECONDS=2592000  # defaults; set False/0 only for plain-HTTP local runs
+EXPOSE_API_DOCS=False  # /swagger/ and /redoc/ default to on only when DEBUG
+# AI (pages show "not configured" until the key is set)
 ANTHROPIC_API_KEY=
-OPENAI_API_KEY=
+AI_PROVIDER=anthropic AI_MODEL=claude-sonnet-5-5  # defaults
+AI_DAILY_TUTOR_MESSAGES=50 AI_DAILY_TEACHER_TOOL_RUNS=30  # per user per day
+AI_MAX_ATTACHMENT_MB=20  # largest shared file sent to the model
 ```
 
 ### Frontend (.env.local)
 ```
 NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
 NEXT_PUBLIC_WS_URL=ws://localhost:8000/ws
+```
+
+### Website (.env.local)
+```
+NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1  # contact + tutor application forms post here
 ```
 
 ## Implementation Phases
@@ -124,3 +159,11 @@ NEXT_PUBLIC_WS_URL=ws://localhost:8000/ws
 ## Testing
 - Backend: `python manage.py test`
 - Frontend: Component tests with testing-library (to be set up)
+- No credentials are committed: CI generates throwaway keys per run and uses a passwordless (trust) Postgres service; compose requires `SECRET_KEY` and `DB_PASSWORD` from `.env`
+- CI (`.github/workflows/ci.yml`): backend tests on PostgreSQL (Python 3.13 and 3.14), migration drift check, `check --deploy --fail-level WARNING`; lint, type-check and build for `frontend/` and `website/`; `docker compose build`
+
+## Deployment
+- `docker compose up --build` runs Postgres, Redis, the API (Daphne, port 8000), the LMS (3000) and the website (3001); copy `.env.example` to `.env` and set `SECRET_KEY` and `DB_PASSWORD` first
+- `NEXT_PUBLIC_*` URLs are baked in at image build time (compose build args), not read at runtime
+- The API serves its own static files (whitenoise). `/media/` (avatars) must be served by a web server or object storage in production; `private_media/` must never be served
+- `/healthz/` is the liveness endpoint (no auth, exempt from the HTTPS redirect)

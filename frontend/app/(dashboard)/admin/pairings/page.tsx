@@ -1,85 +1,74 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+import { useState } from "react";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatsRow } from "@/components/shared/stats-row";
 import { SearchFilterBar } from "@/components/shared/search-filter-bar";
 import { EmptyState } from "@/components/shared/empty-state";
+import { ErrorState } from "@/components/shared/error-state";
+import { CardGridSkeleton } from "@/components/shared/card-grid-skeleton";
+import { PaginationControls } from "@/components/shared/pagination-controls";
 import { PairingCard } from "@/components/admin/pairing-card";
 import { CreatePairingSheet } from "@/components/admin/create-pairing-sheet";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
+import { getErrorMessage } from "@/lib/api/errors";
 import { pairingsApi } from "@/lib/api/pairings";
 import type { Pairing } from "@/lib/api/pairings";
+import { queryKeys } from "@/lib/query-keys";
 
 export default function PairingsPage() {
-  const [pairings, setPairings] = useState<Pairing[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
-  const [filters, setFilters] = useState<Record<string, string>>({});
+  const [statusFilter, setStatusFilter] = useState("");
+  const [page, setPage] = useState(1);
   const [createOpen, setCreateOpen] = useState(false);
+  const debouncedSearch = useDebouncedValue(search);
 
-  const fetchPairings = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params: Record<string, string> = {};
-      if (filters.status) params.status = filters.status;
-      const data = await pairingsApi.getAll(params);
-      const results = data.results;
-      if (search) {
-        const q = search.toLowerCase();
-        setPairings(
-          results.filter(
-            (p) =>
-              p.subject.toLowerCase().includes(q) ||
-              `${p.teacher.first_name} ${p.teacher.last_name}`.toLowerCase().includes(q) ||
-              `${p.student.first_name} ${p.student.last_name}`.toLowerCase().includes(q)
-          )
-        );
-      } else {
-        setPairings(results);
-      }
-    } catch {
-      // silent
-    } finally {
-      setLoading(false);
-    }
-  }, [search, filters]);
+  const params: Record<string, string> = { page: String(page) };
+  if (debouncedSearch) params.search = debouncedSearch;
+  if (statusFilter) params.status = statusFilter;
 
-  useEffect(() => {
-    const timer = setTimeout(fetchPairings, search ? 300 : 0);
-    return () => clearTimeout(timer);
-  }, [fetchPairings, search]);
+  const list = useQuery({
+    queryKey: queryKeys.pairings.list(params),
+    queryFn: () => pairingsApi.getAll(params),
+    placeholderData: keepPreviousData,
+  });
+  const stats = useQuery({ queryKey: queryKeys.pairings.stats, queryFn: pairingsApi.getStats });
 
-  async function handleEnd(pairing: Pairing) {
-    try {
-      await pairingsApi.end(pairing.id);
-      setPairings((prev) =>
-        prev.map((p) => (p.id === pairing.id ? { ...p, status: "ended" } : p))
-      );
+  function refreshPairings() {
+    queryClient.invalidateQueries({ queryKey: queryKeys.pairings.all });
+    queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats });
+  }
+
+  const endPairing = useMutation({
+    mutationFn: (pairing: Pairing) => pairingsApi.end(pairing.id),
+    onSuccess: () => {
       toast.success("Pairing ended");
-    } catch {
-      toast.error("Failed to end pairing");
-    }
-  }
+      refreshPairings();
+    },
+    onError: (error) => toast.error(getErrorMessage(error, "Failed to end pairing")),
+  });
 
-  async function handlePause(pairing: Pairing) {
-    const newStatus = pairing.status === "active" ? "paused" : "active";
-    try {
-      await pairingsApi.update(pairing.id, { status: newStatus });
-      setPairings((prev) =>
-        prev.map((p) => (p.id === pairing.id ? { ...p, status: newStatus } : p))
-      );
-      toast.success(newStatus === "paused" ? "Pairing paused" : "Pairing resumed");
-    } catch {
-      toast.error("Failed to update pairing");
-    }
-  }
+  const togglePause = useMutation({
+    mutationFn: (pairing: Pairing) =>
+      pairingsApi.update(pairing.id, { status: pairing.status === "active" ? "paused" : "active" }),
+    onSuccess: (updated) => {
+      toast.success(updated.status === "paused" ? "Pairing paused" : "Pairing resumed");
+      refreshPairings();
+    },
+    onError: (error) => toast.error(getErrorMessage(error, "Failed to update pairing")),
+  });
 
-  const active = pairings.filter((p) => p.status === "active").length;
-  const paused = pairings.filter((p) => p.status === "paused").length;
-  const ended = pairings.filter((p) => p.status === "ended").length;
+  const pairings = list.data?.results ?? [];
+  const isFiltered = !!debouncedSearch || !!statusFilter;
+  const createButton = (
+    <Button size="sm" onClick={() => setCreateOpen(true)}>
+      <Plus className="h-4 w-4 mr-1" /> Create Pairing
+    </Button>
+  );
 
   return (
     <div className="space-y-5">
@@ -98,18 +87,23 @@ export default function PairingsPage() {
         }
       />
 
-      <StatsRow
-        stats={[
-          { label: "Active", value: active, color: "green" },
-          { label: "Paused", value: paused, color: "amber" },
-          { label: "Ended", value: ended, color: "default" },
-        ]}
-      />
+      {stats.data && (
+        <StatsRow
+          stats={[
+            { label: "Active", value: stats.data.active, color: "green" },
+            { label: "Paused", value: stats.data.paused, color: "amber" },
+            { label: "Ended", value: stats.data.ended, color: "default" },
+          ]}
+        />
+      )}
 
       <SearchFilterBar
         searchPlaceholder="Search by teacher, student, or subject..."
         searchValue={search}
-        onSearchChange={setSearch}
+        onSearchChange={(value) => {
+          setSearch(value);
+          setPage(1);
+        }}
         filters={[
           {
             key: "status",
@@ -121,44 +115,48 @@ export default function PairingsPage() {
             ],
           },
         ]}
-        filterValues={filters}
-        onFilterChange={(key, val) => setFilters((prev) => ({ ...prev, [key]: val }))}
+        filterValues={{ status: statusFilter }}
+        onFilterChange={(_, value) => {
+          setStatusFilter(value);
+          setPage(1);
+        }}
       />
 
-      {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-48 rounded-xl" />
-          ))}
-        </div>
+      {list.isPending ? (
+        <CardGridSkeleton cardClassName="h-48" />
+      ) : list.isError ? (
+        <ErrorState error={list.error} onRetry={() => list.refetch()} />
       ) : pairings.length === 0 ? (
         <EmptyState
           icon={Link2}
           title="No pairings found"
-          description="Create your first pairing to assign a teacher to a student."
-          action={
-            <Button size="sm" onClick={() => setCreateOpen(true)}>
-              <Plus className="h-4 w-4 mr-1" /> Create Pairing
-            </Button>
+          description={
+            isFiltered
+              ? "Try adjusting your search or filter."
+              : "Create your first pairing to assign a teacher to a student."
           }
+          action={isFiltered ? undefined : createButton}
         />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {pairings.map((pairing) => (
-            <PairingCard
-              key={pairing.id}
-              pairing={pairing}
-              onEnd={handleEnd}
-              onPause={handlePause}
-            />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {pairings.map((pairing) => (
+              <PairingCard
+                key={pairing.id}
+                pairing={pairing}
+                onEnd={(p) => endPairing.mutate(p)}
+                onPause={(p) => togglePause.mutate(p)}
+              />
+            ))}
+          </div>
+          <PaginationControls page={page} count={list.data.count} onPageChange={setPage} />
+        </>
       )}
 
       <CreatePairingSheet
         open={createOpen}
         onClose={() => setCreateOpen(false)}
-        onCreated={(pairing) => setPairings((prev) => [pairing, ...prev])}
+        onCreated={refreshPairings}
       />
     </div>
   );

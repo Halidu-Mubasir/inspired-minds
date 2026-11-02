@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight } from "lucide-react";
+import { PairingStatusBadge } from "@/components/shared/status-badge";
 import { getInitials, formatDate } from "@/lib/utils";
 import type { Pairing } from "@/lib/api/pairings";
 
@@ -12,12 +13,6 @@ interface PairingCardProps {
   onEnd?: (pairing: Pairing) => void;
   onPause?: (pairing: Pairing) => void;
 }
-
-const statusConfig = {
-  active: { label: "Active", className: "bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400" },
-  paused: { label: "Paused", className: "bg-amber-100 text-amber-700 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400" },
-  ended: { label: "Ended", className: "bg-muted text-muted-foreground hover:bg-muted" },
-};
 
 function UserPill({ user }: { user: Pairing["teacher"] | Pairing["student"] }) {
   return (
@@ -36,8 +31,6 @@ function UserPill({ user }: { user: Pairing["teacher"] | Pairing["student"] }) {
 }
 
 export function PairingCard({ pairing, onEnd, onPause }: PairingCardProps) {
-  const status = statusConfig[pairing.status];
-
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardContent className="p-5">
@@ -45,7 +38,7 @@ export function PairingCard({ pairing, onEnd, onPause }: PairingCardProps) {
           <Badge variant="outline" className="text-xs">
             {pairing.subject}
           </Badge>
-          <Badge className={`text-xs ${status.className}`}>{status.label}</Badge>
+          <PairingStatusBadge status={pairing.status} />
         </div>
 
         <div className="flex items-center justify-center gap-3 py-2">

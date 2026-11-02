@@ -1,5 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -16,15 +17,17 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { useSubjects } from "@/hooks/use-subjects";
+import { getErrorMessage } from "@/lib/api/errors";
 import { pairingsApi } from "@/lib/api/pairings";
 import { usersApi } from "@/lib/api/users";
 import type { Pairing } from "@/lib/api/pairings";
-import type { User } from "@/lib/api/users";
+import { queryKeys } from "@/lib/query-keys";
 
 const schema = z.object({
   teacher_id: z.string().min(1, "Select a teacher"),
   student_id: z.string().min(1, "Select a student"),
-  subject: z.string().min(1, "Subject is required"),
+  subject: z.string().min(1, "Select a subject"),
   start_date: z.string().min(1, "Start date is required"),
   notes: z.string().optional(),
 });
@@ -39,15 +42,19 @@ interface CreatePairingSheetProps {
 
 export function CreatePairingSheet({ open, onClose, onCreated }: CreatePairingSheetProps) {
   const [loading, setLoading] = useState(false);
-  const [teachers, setTeachers] = useState<User[]>([]);
-  const [students, setStudents] = useState<User[]>([]);
-
-  useEffect(() => {
-    if (open) {
-      usersApi.getTeachers({ is_active: "true", page_size: "100" }).then((r) => setTeachers(r.results)).catch(() => {});
-      usersApi.getStudents({ is_active: "true", page_size: "100" }).then((r) => setStudents(r.results)).catch(() => {});
-    }
-  }, [open]);
+  const subjects = useSubjects(open);
+  // Pickers list up to 100 active accounts each (the API's maximum page size).
+  const pickerParams = { is_active: "true", page_size: "100" };
+  const teachers = useQuery({
+    queryKey: queryKeys.teachers.list(pickerParams),
+    queryFn: () => usersApi.getTeachers(pickerParams),
+    enabled: open,
+  }).data?.results ?? [];
+  const students = useQuery({
+    queryKey: queryKeys.students.list(pickerParams),
+    queryFn: () => usersApi.getStudents(pickerParams),
+    enabled: open,
+  }).data?.results ?? [];
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -68,10 +75,8 @@ export function CreatePairingSheet({ open, onClose, onCreated }: CreatePairingSh
       form.reset();
       onCreated(pairing);
       onClose();
-    } catch (err: unknown) {
-      const e = err as { data?: { non_field_errors?: string[] } };
-      const msg = e?.data?.non_field_errors?.[0] ?? "Failed to create pairing";
-      toast.error(msg);
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to create pairing"));
     } finally {
       setLoading(false);
     }
@@ -125,7 +130,16 @@ export function CreatePairingSheet({ open, onClose, onCreated }: CreatePairingSh
             <FormField control={form.control} name="subject" render={({ field }) => (
               <FormItem>
                 <FormLabel>Subject</FormLabel>
-                <FormControl><Input placeholder="e.g. Mathematics" {...field} /></FormControl>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger><SelectValue placeholder="Select subject" /></SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {subjects.map((s) => (
+                      <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )} />

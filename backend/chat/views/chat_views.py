@@ -12,7 +12,7 @@ def _get_user_conversations(user):
     """Return Conversation queryset visible to this user, annotated with unread_count."""
     qs = Conversation.objects.filter(
         Q(pairing__teacher=user) | Q(pairing__student=user)
-    ).select_related("pairing__teacher", "pairing__student").annotate(
+    ).select_related("pairing__teacher", "pairing__student", "pairing__subject").annotate(
         unread_count=Count(
             "messages",
             filter=Q(messages__is_read=False) & ~Q(messages__sender=user),
@@ -61,7 +61,8 @@ class MessageListView(generics.ListAPIView):
         user = self.request.user
         if conversation.pairing.teacher != user and conversation.pairing.student != user:
             return Message.objects.none()
-        return conversation.messages.select_related("sender")
+        # Newest first, so page 1 is the latest messages; clients reverse each page for display.
+        return conversation.messages.select_related("sender").order_by("-created_at")
 
 
 class MarkReadView(APIView):

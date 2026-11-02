@@ -11,6 +11,7 @@ interface MessageThreadProps {
   messages: Message[];
   currentUserId?: string;
   isLoadingHistory: boolean;
+  historyError?: boolean;
   hasMore: boolean;
   otherUserTyping: boolean;
   onLoadMore: () => void;
@@ -20,6 +21,7 @@ export function MessageThread({
   messages,
   currentUserId,
   isLoadingHistory,
+  historyError = false,
   hasMore,
   otherUserTyping,
   onLoadMore,
@@ -72,7 +74,13 @@ export function MessageThread({
           </div>
         )}
 
-        {messages.length === 0 && (
+        {historyError && (
+          <p className="text-center text-sm text-destructive py-2">
+            Couldn&apos;t load earlier messages. Reopen the conversation to try again.
+          </p>
+        )}
+
+        {messages.length === 0 && !historyError && (
           <p className="text-center text-sm text-muted-foreground py-8">
             No messages yet. Say hello!
           </p>

@@ -20,14 +20,15 @@ class MessageSerializer(serializers.ModelSerializer):
 class ConversationSerializer(serializers.ModelSerializer):
     teacher = serializers.SerializerMethodField()
     student = serializers.SerializerMethodField()
-    subject = serializers.CharField(source="pairing.subject", read_only=True)
+    subject = serializers.CharField(source="pairing.subject.name", read_only=True)
+    pairing_status = serializers.CharField(source="pairing.status", read_only=True)
     pairing_id = serializers.UUIDField(source="pairing.id", read_only=True)
     unread_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Conversation
         fields = [
-            "id", "pairing_id", "subject", "teacher", "student",
+            "id", "pairing_id", "pairing_status", "subject", "teacher", "student",
             "last_message_at", "last_message_preview", "unread_count", "created_at",
         ]
 

@@ -1,16 +1,24 @@
 import { clsx, type ClassValue } from "clsx";
+import { format, parseISO } from "date-fns";
 import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+// parseISO reads a date-only "YYYY-MM-DD" as local midnight, unlike `new Date()` (UTC).
+function toDate(date: string | Date): Date {
+  return typeof date === "string" ? parseISO(date) : date;
+}
+
+/** e.g. "05 Mar 2026" */
 export function formatDate(date: string | Date): string {
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(date));
+  return format(toDate(date), "dd MMM yyyy");
+}
+
+/** e.g. "Thursday, 5 March 2026" */
+export function formatLongDate(date: string | Date): string {
+  return format(toDate(date), "EEEE, d MMMM yyyy");
 }
 
 export function formatTime(time: string): string {

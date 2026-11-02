@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from lessons.models import Lesson, LessonTopic
+from lessons.models import Lesson, LessonTopic, LESSON_STATUS_TRANSITIONS
 
 
 class LessonTopicSerializer(serializers.ModelSerializer):
@@ -10,7 +10,7 @@ class LessonTopicSerializer(serializers.ModelSerializer):
 
 class LessonListSerializer(serializers.ModelSerializer):
     pairing_id = serializers.UUIDField(source="pairing.id")
-    subject = serializers.CharField(source="pairing.subject")
+    subject = serializers.CharField(source="pairing.subject.name")
     teacher_name = serializers.SerializerMethodField()
     student_name = serializers.SerializerMethodField()
     topic_count = serializers.SerializerMethodField()
@@ -38,7 +38,7 @@ class LessonListSerializer(serializers.ModelSerializer):
 class LessonDetailSerializer(serializers.ModelSerializer):
     topics = LessonTopicSerializer(many=True, read_only=True)
     pairing_id = serializers.UUIDField(source="pairing.id", read_only=True)
-    subject = serializers.CharField(source="pairing.subject", read_only=True)
+    subject = serializers.CharField(source="pairing.subject.name", read_only=True)
     teacher = serializers.SerializerMethodField()
     student = serializers.SerializerMethodField()
 
@@ -79,22 +79,19 @@ class CreateLessonSerializer(serializers.ModelSerializer):
         ]
 
     def validate_pairing_id(self, value):
+        """Resolve to a pairing the requesting user is allowed to plan lessons for."""
         from pairings.models import TeacherStudentPairing, PairingStatus
         request = self.context["request"]
         try:
-            pairing = TeacherStudentPairing.objects.get(id=value)
+            pairing = TeacherStudentPairing.objects.for_user(request.user).get(id=value)
         except TeacherStudentPairing.DoesNotExist:
             raise serializers.ValidationError("Pairing not found.")
-        if request.user.role == "teacher" and pairing.teacher_id != request.user.id:
-            raise serializers.ValidationError("You can only create lessons for your own pairings.")
         if pairing.status == PairingStatus.ENDED:
             raise serializers.ValidationError("Cannot create lessons for an ended pairing.")
-        return value
+        return pairing
 
     def create(self, validated_data):
-        pairing_id = validated_data.pop("pairing_id")
-        from pairings.models import TeacherStudentPairing
-        pairing = TeacherStudentPairing.objects.get(id=pairing_id)
+        pairing = validated_data.pop("pairing_id")
         return Lesson.objects.create(pairing=pairing, **validated_data)
 
 
@@ -111,3 +108,9 @@ class LessonStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = Lesson
         fields = ["status"]
+
+    def validate_status(self, value):
+        current = self.instance.status
+        if value != current and value not in LESSON_STATUS_TRANSITIONS[current]:
+            raise serializers.ValidationError(f"A {current} lesson cannot be marked {value}.")
+        return value

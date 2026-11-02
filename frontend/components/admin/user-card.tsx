@@ -4,11 +4,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { getInitials } from "@/lib/utils";
+import { EDUCATION_LEVEL_LABELS } from "@/lib/api/users";
 import type { User } from "@/lib/api/users";
 
 interface UserCardProps {
   user: User;
   basePath: string;
+  /** Omit to hide the Edit button. */
   onEdit?: (user: User) => void;
 }
 
@@ -16,6 +18,10 @@ export function UserCard({ user, basePath, onEdit }: UserCardProps) {
   const router = useRouter();
   const subjects =
     user.teacher_profile?.subjects ?? user.student_profile?.subjects_of_interest ?? [];
+  const studentDetails = user.student_profile && [
+    user.student_profile.education_level && EDUCATION_LEVEL_LABELS[user.student_profile.education_level],
+    user.student_profile.school_name,
+  ].filter(Boolean).join(" · ");
 
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -52,13 +58,8 @@ export function UserCard({ user, basePath, onEdit }: UserCardProps) {
                 {user.teacher_profile.is_available ? " · Available" : " · Unavailable"}
               </p>
             )}
-            {user.student_profile && (
-              <p className="text-xs text-muted-foreground mt-0.5 capitalize">
-                {user.student_profile.education_level.replace("_", " ")}
-                {user.student_profile.school_name
-                  ? ` · ${user.student_profile.school_name}`
-                  : ""}
-              </p>
+            {studentDetails && (
+              <p className="text-xs text-muted-foreground mt-0.5">{studentDetails}</p>
             )}
 
             {subjects.length > 0 && (
@@ -87,14 +88,16 @@ export function UserCard({ user, basePath, onEdit }: UserCardProps) {
           >
             View
           </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="flex-1 text-xs"
-            onClick={() => onEdit?.(user)}
-          >
-            Edit
-          </Button>
+          {onEdit && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="flex-1 text-xs"
+              onClick={() => onEdit(user)}
+            >
+              Edit
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>

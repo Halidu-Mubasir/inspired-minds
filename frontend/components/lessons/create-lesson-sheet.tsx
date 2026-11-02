@@ -1,5 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -16,10 +17,11 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { getErrorMessage } from "@/lib/api/errors";
 import { lessonsApi } from "@/lib/api/lessons";
 import { pairingsApi } from "@/lib/api/pairings";
 import type { LessonDetail } from "@/lib/api/lessons";
-import type { Pairing } from "@/lib/api/pairings";
+import { queryKeys } from "@/lib/query-keys";
 
 const schema = z.object({
   pairing_id: z.string().min(1, "Select a pairing"),
@@ -44,13 +46,11 @@ interface CreateLessonSheetProps {
 
 export function CreateLessonSheet({ open, onClose, onCreated, defaultPairingId }: CreateLessonSheetProps) {
   const [loading, setLoading] = useState(false);
-  const [pairings, setPairings] = useState<Pairing[]>([]);
-
-  useEffect(() => {
-    if (open) {
-      pairingsApi.getMyStudents().then(setPairings).catch(() => {});
-    }
-  }, [open]);
+  const pairings = useQuery({
+    queryKey: queryKeys.pairings.myStudents,
+    queryFn: pairingsApi.getMyStudents,
+    enabled: open,
+  }).data ?? [];
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -80,8 +80,8 @@ export function CreateLessonSheet({ open, onClose, onCreated, defaultPairingId }
       form.reset();
       onCreated(lesson);
       onClose();
-    } catch {
-      toast.error("Failed to create lesson");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to create lesson"));
     } finally {
       setLoading(false);
     }

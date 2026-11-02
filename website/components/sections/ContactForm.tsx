@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { submitForm } from "@/lib/api";
 
 const schema = z.object({
   name: z.string().min(2, "Name is required"),
@@ -37,8 +38,15 @@ export function ContactForm() {
     formState: { errors, isSubmitting },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
 
-  function onSubmit(data: FormData) {
-    console.log("Contact enquiry:", data);
+  async function onSubmit(data: FormData) {
+    try {
+      await submitForm("/enquiries/contact/", data);
+    } catch {
+      toast.error("Sorry, your message could not be sent.", {
+        description: "Please try again shortly, or call or WhatsApp us directly.",
+      });
+      return;
+    }
     toast.success("Message sent! We'll be in touch soon.", {
       description: "Our team typically responds within 24 hours.",
     });

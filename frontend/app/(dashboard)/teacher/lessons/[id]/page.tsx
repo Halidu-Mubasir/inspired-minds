@@ -1,90 +1,74 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Clock, CalendarDays, CheckCircle, XCircle, Upload } from "lucide-react";
+import { ArrowLeft, CalendarCheck, CheckCircle, XCircle, Upload } from "lucide-react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import { DetailPageError, DetailPageSkeleton } from "@/components/shared/detail-page-states";
+import { LessonStatusBadge } from "@/components/shared/status-badge";
+import { LessonOverviewCard } from "@/components/lessons/lesson-overview-card";
 import { LessonTopics } from "@/components/lessons/lesson-topics";
 import { ResourceCard } from "@/components/resources/resource-card";
 import { UploadResourceSheet } from "@/components/resources/upload-resource-sheet";
+import { getErrorMessage } from "@/lib/api/errors";
 import { lessonsApi } from "@/lib/api/lessons";
-import { resourcesApi } from "@/lib/api/resources";
 import type { LessonDetail } from "@/lib/api/lessons";
-import type { Resource } from "@/lib/api/resources";
+import { resourcesApi } from "@/lib/api/resources";
+import { queryKeys } from "@/lib/query-keys";
 
-const statusConfig = {
-  draft: { label: "Draft", className: "bg-muted text-muted-foreground" },
-  scheduled: { label: "Scheduled", className: "bg-blue-100 text-blue-700" },
-  completed: { label: "Completed", className: "bg-emerald-100 text-emerald-700" },
-  cancelled: { label: "Cancelled", className: "bg-red-100 text-red-600" },
-};
-
-function formatDate(d: string) {
-  return new Date(d).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-}
-function formatTime(t: string | null) {
-  if (!t) return null;
-  const [h, m] = t.split(":");
-  const d = new Date(); d.setHours(Number(h), Number(m));
-  return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-}
+type NoteField = "student_notes" | "teacher_notes" | "homework";
 
 export default function TeacherLessonDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const [lesson, setLesson] = useState<LessonDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState<string | null>(null);
-  const [resources, setResources] = useState<Resource[]>([]);
+  const queryClient = useQueryClient();
   const [uploadSheetOpen, setUploadSheetOpen] = useState(false);
 
-  useEffect(() => {
-    lessonsApi.get(id).then(setLesson).catch(() => {}).finally(() => setLoading(false));
-    resourcesApi.getAll({ lesson_id: id }).then((res) => setResources(res.results ?? (res as unknown as Resource[]))).catch(() => {});
-  }, [id]);
+  const detailKey = queryKeys.lessons.detail(id);
+  const lessonQuery = useQuery({ queryKey: detailKey, queryFn: () => lessonsApi.get(id) });
+  const resourceParams = { lesson: id };
+  const resourcesQuery = useQuery({
+    queryKey: queryKeys.resources.list(resourceParams),
+    queryFn: () => resourcesApi.getAll(resourceParams),
+  });
 
-  async function handleStatusChange(newStatus: string) {
-    if (!lesson) return;
-    setSaving("status");
-    try {
-      const updated = await lessonsApi.updateStatus(id, newStatus);
-      setLesson(updated);
-      toast.success(`Lesson marked as ${newStatus}`);
-    } catch {
-      toast.error("Failed to update status");
-    } finally {
-      setSaving(null);
-    }
+  /** Store the server's copy of this lesson and refresh any lists that show it. */
+  function storeLesson(updated: LessonDetail) {
+    queryClient.setQueryData(detailKey, updated);
+    queryClient.invalidateQueries({ queryKey: ["lessons", "list"] });
   }
 
-  async function handleNotesBlur(field: "student_notes" | "teacher_notes" | "homework", value: string) {
-    if (!lesson) return;
-    if (value === (lesson[field] ?? "")) return;
-    try {
-      const updated = await lessonsApi.update(id, { [field]: value });
-      setLesson(updated);
-    } catch {
-      toast.error("Failed to save");
-    }
+  const statusMutation = useMutation({
+    mutationFn: (status: string) => lessonsApi.updateStatus(id, status),
+    onSuccess: (updated) => {
+      storeLesson(updated);
+      toast.success(`Lesson marked as ${updated.status}`);
+    },
+    onError: (error) => toast.error(getErrorMessage(error, "Failed to update status")),
+  });
+
+  const notesMutation = useMutation({
+    mutationFn: ({ field, value }: { field: NoteField; value: string }) => lessonsApi.update(id, { [field]: value }),
+    onSuccess: storeLesson,
+    onError: (error) => toast.error(getErrorMessage(error, "Failed to save")),
+  });
+
+  if (lessonQuery.isPending) return <DetailPageSkeleton />;
+  if (lessonQuery.isError) {
+    return <DetailPageError error={lessonQuery.error} noun="Lesson" onRetry={() => lessonQuery.refetch()} />;
+  }
+  const lesson = lessonQuery.data;
+  const resources = resourcesQuery.data?.results ?? [];
+
+  function saveNotes(field: NoteField, value: string) {
+    if (value !== (lesson[field] ?? "")) notesMutation.mutate({ field, value });
   }
 
-  if (loading) {
-    return (
-      <div className="space-y-4 max-w-3xl">
-        <Skeleton className="h-8 w-32" />
-        <Skeleton className="h-48 rounded-xl" />
-        <Skeleton className="h-48 rounded-xl" />
-      </div>
-    );
-  }
-
-  if (!lesson) return <div className="text-center py-16 text-muted-foreground">Lesson not found.</div>;
-
-  const status = statusConfig[lesson.status];
+  const refreshResources = () => queryClient.invalidateQueries({ queryKey: queryKeys.resources.all });
+  const busy = statusMutation.isPending;
 
   return (
     <div className="space-y-5 max-w-3xl">
@@ -93,50 +77,29 @@ export default function TeacherLessonDetailPage() {
           <ArrowLeft className="h-4 w-4" /> Back
         </Button>
         <div className="flex items-center gap-2">
-          <Badge className={status.className}>{status.label}</Badge>
+          <LessonStatusBadge status={lesson.status} />
+          {lesson.status === "draft" || lesson.status === "cancelled" ? (
+            <Button size="sm" variant="outline" className="gap-1.5 h-7 text-xs" disabled={busy}
+              onClick={() => statusMutation.mutate("scheduled")}>
+              <CalendarCheck className="h-3.5 w-3.5" /> Schedule
+            </Button>
+          ) : null}
           {lesson.status === "scheduled" || lesson.status === "draft" ? (
-            <Button size="sm" className="gap-1.5 h-7 text-xs bg-emerald-600 hover:bg-emerald-700" disabled={!!saving}
-              onClick={() => handleStatusChange("completed")}>
+            <Button size="sm" className="gap-1.5 h-7 text-xs bg-emerald-600 hover:bg-emerald-700" disabled={busy}
+              onClick={() => statusMutation.mutate("completed")}>
               <CheckCircle className="h-3.5 w-3.5" /> Mark Complete
             </Button>
           ) : null}
           {lesson.status !== "cancelled" && lesson.status !== "completed" ? (
-            <Button size="sm" variant="outline" className="gap-1.5 h-7 text-xs text-destructive hover:text-destructive" disabled={!!saving}
-              onClick={() => handleStatusChange("cancelled")}>
+            <Button size="sm" variant="outline" className="gap-1.5 h-7 text-xs text-destructive hover:text-destructive" disabled={busy}
+              onClick={() => statusMutation.mutate("cancelled")}>
               <XCircle className="h-3.5 w-3.5" /> Cancel
             </Button>
           ) : null}
         </div>
       </div>
 
-      {/* Main Info */}
-      <Card>
-        <CardContent className="p-6">
-          <h2 className="text-xl font-bold mb-1">{lesson.title}</h2>
-          {lesson.description && <p className="text-sm text-muted-foreground mb-3">{lesson.description}</p>}
-
-          <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
-            <span className="flex items-center gap-1.5">
-              <CalendarDays className="h-4 w-4" /> {formatDate(lesson.scheduled_date)}
-            </span>
-            {lesson.scheduled_time && (
-              <span className="flex items-center gap-1.5">
-                <Clock className="h-4 w-4" /> {formatTime(lesson.scheduled_time)}
-              </span>
-            )}
-            <span className="flex items-center gap-1.5">
-              <Clock className="h-4 w-4" /> {lesson.duration_minutes} min
-            </span>
-          </div>
-
-          <div className="flex gap-2 mt-3">
-            <Badge variant="outline">{lesson.subject}</Badge>
-            <span className="text-sm text-muted-foreground">
-              Student: {lesson.student.first_name} {lesson.student.last_name}
-            </span>
-          </div>
-        </CardContent>
-      </Card>
+      <LessonOverviewCard lesson={lesson} counterpart="student" showStatus={false} />
 
       {/* Topics */}
       <Card>
@@ -148,7 +111,7 @@ export default function TeacherLessonDetailPage() {
             lessonId={lesson.id}
             topics={lesson.topics}
             readOnly={false}
-            onChange={(topics) => setLesson({ ...lesson, topics })}
+            onChange={(topics) => storeLesson({ ...lesson, topics })}
           />
         </CardContent>
       </Card>
@@ -163,7 +126,7 @@ export default function TeacherLessonDetailPage() {
             defaultValue={lesson.student_notes ?? ""}
             rows={4}
             placeholder="Notes visible to the student..."
-            onBlur={(e) => handleNotesBlur("student_notes", e.target.value)}
+            onBlur={(e) => saveNotes("student_notes", e.target.value)}
           />
         </CardContent>
       </Card>
@@ -178,7 +141,7 @@ export default function TeacherLessonDetailPage() {
             defaultValue={lesson.homework ?? ""}
             rows={3}
             placeholder="Homework assignment..."
-            onBlur={(e) => handleNotesBlur("homework", e.target.value)}
+            onBlur={(e) => saveNotes("homework", e.target.value)}
           />
         </CardContent>
       </Card>
@@ -193,7 +156,7 @@ export default function TeacherLessonDetailPage() {
             defaultValue={lesson.teacher_notes ?? ""}
             rows={3}
             placeholder="Your private notes..."
-            onBlur={(e) => handleNotesBlur("teacher_notes", e.target.value)}
+            onBlur={(e) => saveNotes("teacher_notes", e.target.value)}
           />
         </CardContent>
       </Card>
@@ -207,17 +170,16 @@ export default function TeacherLessonDetailPage() {
           </Button>
         </CardHeader>
         <CardContent>
-          {resources.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No files attached to this lesson.</p>
+          {resourcesQuery.isError ? (
+            <p className="text-sm text-destructive">Couldn&apos;t load this lesson&apos;s files.</p>
+          ) : resources.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              {resourcesQuery.isPending ? "Loading files…" : "No files attached to this lesson."}
+            </p>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
               {resources.map((r) => (
-                <ResourceCard
-                  key={r.id}
-                  resource={r}
-                  canDelete
-                  onDeleted={(deletedId) => setResources((prev) => prev.filter((x) => x.id !== deletedId))}
-                />
+                <ResourceCard key={r.id} resource={r} canDelete onDeleted={refreshResources} />
               ))}
             </div>
           )}
@@ -227,7 +189,7 @@ export default function TeacherLessonDetailPage() {
       <UploadResourceSheet
         open={uploadSheetOpen}
         onClose={() => setUploadSheetOpen(false)}
-        onUploaded={(r) => setResources((prev) => [r, ...prev])}
+        onUploaded={refreshResources}
         defaultPairingId={lesson.pairing_id}
         defaultLessonId={lesson.id}
       />

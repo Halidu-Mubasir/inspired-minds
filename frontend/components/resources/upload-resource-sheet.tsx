@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -17,12 +18,16 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { getErrorMessage } from "@/lib/api/errors";
 import { resourcesApi, RESOURCE_TYPE_LABELS } from "@/lib/api/resources";
 import { pairingsApi } from "@/lib/api/pairings";
+import { useSubjects } from "@/hooks/use-subjects";
 import type { Resource, ResourceType } from "@/lib/api/resources";
-import type { Pairing } from "@/lib/api/pairings";
+import { queryKeys } from "@/lib/query-keys";
 
 const RESOURCE_TYPES: ResourceType[] = ["note", "document", "past_question", "answer_sheet", "worksheet"];
+// Radix Select items can't have an empty value, so "no subject" needs a sentinel.
+const NO_SUBJECT = "__none__";
 
 const schema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -58,7 +63,12 @@ export function UploadResourceSheet({
   const [loading, setLoading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
-  const [pairings, setPairings] = useState<Pairing[]>([]);
+  const pairings = useQuery({
+    queryKey: queryKeys.pairings.myStudents,
+    queryFn: pairingsApi.getMyStudents,
+    enabled: open && !libraryOnly,
+  }).data ?? [];
+  const subjects = useSubjects(open);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<FormValues>({
@@ -75,12 +85,6 @@ export function UploadResourceSheet({
   });
 
   const visibility = form.watch("visibility");
-
-  useEffect(() => {
-    if (open && !libraryOnly) {
-      pairingsApi.getMyStudents().then(setPairings).catch(() => {});
-    }
-  }, [open, libraryOnly]);
 
   // Reset form when sheet opens with new context
   useEffect(() => {
@@ -133,8 +137,8 @@ export function UploadResourceSheet({
       toast.success("File uploaded successfully");
       onUploaded(resource);
       onClose();
-    } catch {
-      toast.error("Upload failed. Check file size (max 50MB) and format.");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Upload failed. Check file size (max 50MB) and format."));
     } finally {
       setLoading(false);
     }
@@ -220,7 +224,20 @@ export function UploadResourceSheet({
               <FormField control={form.control} name="subject" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Subject (optional)</FormLabel>
-                  <FormControl><Input placeholder="e.g. Mathematics" {...field} /></FormControl>
+                  <Select
+                    onValueChange={(v) => field.onChange(v === NO_SUBJECT ? "" : v)}
+                    value={field.value || NO_SUBJECT}
+                  >
+                    <FormControl>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value={NO_SUBJECT}>No subject</SelectItem>
+                      {subjects.map((s) => (
+                        <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )} />

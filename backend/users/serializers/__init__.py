@@ -1,21 +1,31 @@
-from .auth import LoginSerializer, RegisterSerializer, ChangePasswordSerializer
+from .auth import (
+    LoginSerializer,
+    LogoutSerializer,
+    ChangePasswordSerializer,
+    PasswordResetRequestSerializer,
+    PasswordResetConfirmSerializer,
+)
 from .profile import (
     UserSerializer,
-    UserListSerializer,
     TeacherProfileSerializer,
     StudentProfileSerializer,
     CreateTeacherSerializer,
     CreateStudentSerializer,
+    UpdateTeacherSerializer,
+    UpdateStudentSerializer,
 )
 
 __all__ = [
     "LoginSerializer",
-    "RegisterSerializer",
+    "LogoutSerializer",
     "ChangePasswordSerializer",
+    "PasswordResetRequestSerializer",
+    "PasswordResetConfirmSerializer",
     "UserSerializer",
-    "UserListSerializer",
     "TeacherProfileSerializer",
     "StudentProfileSerializer",
     "CreateTeacherSerializer",
     "CreateStudentSerializer",
+    "UpdateTeacherSerializer",
+    "UpdateStudentSerializer",
 ]

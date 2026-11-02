@@ -1,31 +1,26 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Users, UserCheck, Link2, BookOpen } from "lucide-react";
 import { StatCard } from "@/components/shared/stat-card";
 import { usersApi } from "@/lib/api/users";
-
-interface DashboardStats {
-  total_teachers: number;
-  total_students: number;
-  active_pairings: number;
-}
+import { queryKeys } from "@/lib/query-keys";
 
 export default function AdminDashboardPage() {
-  const [stats, setStats] = useState<DashboardStats>({
-    total_teachers: 0,
-    total_students: 0,
-    active_pairings: 0,
-  });
-
-  useEffect(() => {
-    usersApi.getDashboardStats().then((data) => setStats(data as DashboardStats)).catch(() => {});
-  }, []);
+  const { data, isError } = useQuery({ queryKey: queryKeys.dashboardStats, queryFn: usersApi.getDashboardStats });
+  // "—" while loading or if the stats couldn't be fetched, never a misleading 0.
+  const stats = {
+    total_teachers: data?.total_teachers ?? "—",
+    total_students: data?.total_students ?? "—",
+    active_pairings: data?.active_pairings ?? "—",
+    lessons_this_week: data?.lessons_this_week ?? "—",
+  };
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Admin Dashboard</h1>
         <p className="text-muted-foreground">Welcome back. Here is an overview of your platform.</p>
+        {isError && <p className="text-sm text-destructive mt-2">Couldn&apos;t load platform stats.</p>}
       </div>
 
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
@@ -38,7 +33,7 @@ export default function AdminDashboardPage() {
         <StatCard
           title="Total Students"
           value={stats.total_students}
-          description="Registered students"
+          description="Active students on the platform"
           icon={Users}
         />
         <StatCard
@@ -49,8 +44,8 @@ export default function AdminDashboardPage() {
         />
         <StatCard
           title="Lessons This Week"
-          value="—"
-          description="Scheduled this week"
+          value={stats.lessons_this_week}
+          description="Scheduled in the next 7 days"
           icon={BookOpen}
         />
       </div>

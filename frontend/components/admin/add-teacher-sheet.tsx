@@ -13,6 +13,9 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
 } from "@/components/ui/form";
+import { SubjectPicker } from "@/components/shared/subject-picker";
+import { useSubjects } from "@/hooks/use-subjects";
+import { getErrorMessage } from "@/lib/api/errors";
 import { usersApi } from "@/lib/api/users";
 import type { User } from "@/lib/api/users";
 
@@ -22,7 +25,7 @@ const schema = z.object({
   last_name: z.string().min(1, "Required"),
   phone_number: z.string().optional(),
   password: z.string().min(8, "At least 8 characters"),
-  subjects: z.string().optional(),
+  subjects: z.array(z.string()),
   qualifications: z.string().optional(),
   bio: z.string().optional(),
   years_of_experience: z.string().optional(),
@@ -39,12 +42,13 @@ interface AddTeacherSheetProps {
 
 export function AddTeacherSheet({ open, onClose, onCreated }: AddTeacherSheetProps) {
   const [loading, setLoading] = useState(false);
+  const subjectOptions = useSubjects(open);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       email: "", first_name: "", last_name: "", phone_number: "",
-      password: "", subjects: "", qualifications: "", bio: "",
+      password: "", subjects: [], qualifications: "", bio: "",
       years_of_experience: "0", hourly_rate: "",
     },
   });
@@ -52,17 +56,13 @@ export function AddTeacherSheet({ open, onClose, onCreated }: AddTeacherSheetPro
   async function onSubmit(values: FormValues) {
     setLoading(true);
     try {
-      const subjects = values.subjects
-        ? values.subjects.split(",").map((s) => s.trim()).filter(Boolean)
-        : [];
-
       const payload: Record<string, unknown> = {
         email: values.email,
         first_name: values.first_name,
         last_name: values.last_name,
         password: values.password,
         ...(values.phone_number && { phone_number: values.phone_number }),
-        subjects,
+        subjects: values.subjects,
         ...(values.qualifications && { qualifications: values.qualifications }),
         ...(values.bio && { bio: values.bio }),
         ...(values.years_of_experience !== undefined && values.years_of_experience !== "" && { years_of_experience: Number(values.years_of_experience) }),
@@ -74,8 +74,8 @@ export function AddTeacherSheet({ open, onClose, onCreated }: AddTeacherSheetPro
       form.reset();
       onCreated(user);
       onClose();
-    } catch {
-      toast.error("Failed to create teacher");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to create teacher"));
     } finally {
       setLoading(false);
     }
@@ -129,8 +129,8 @@ export function AddTeacherSheet({ open, onClose, onCreated }: AddTeacherSheetPro
             )} />
             <FormField control={form.control} name="subjects" render={({ field }) => (
               <FormItem>
-                <FormLabel>Subjects (comma-separated)</FormLabel>
-                <FormControl><Input placeholder="Math, Physics, Chemistry" {...field} /></FormControl>
+                <FormLabel>Subjects</FormLabel>
+                <SubjectPicker subjects={subjectOptions} value={field.value} onChange={field.onChange} />
                 <FormMessage />
               </FormItem>
             )} />

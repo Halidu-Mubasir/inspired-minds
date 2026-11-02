@@ -1,5 +1,6 @@
 from django.db import models
 from setup.base_model import BaseModel
+from users.models import UserRole
 
 
 class PairingStatus(models.TextChoices):
@@ -8,20 +9,34 @@ class PairingStatus(models.TextChoices):
     ENDED = "ended", "Ended"
 
 
+class PairingQuerySet(models.QuerySet):
+    def for_user(self, user):
+        """Pairings the user takes part in (admins see all)."""
+        if user.role == UserRole.ADMIN:
+            return self.all()
+        if user.role == UserRole.TEACHER:
+            return self.filter(teacher=user)
+        if user.role == UserRole.STUDENT:
+            return self.filter(student=user)
+        return self.none()
+
+
 class TeacherStudentPairing(BaseModel):
+    # PROTECT: a pairing carries lessons and chat history, so users who have one are
+    # deactivated rather than deleted, and pairings are ended rather than deleted.
     teacher = models.ForeignKey(
         "users.CustomUser",
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name="teacher_pairings",
         limit_choices_to={"role": "teacher"},
     )
     student = models.ForeignKey(
         "users.CustomUser",
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name="student_pairings",
         limit_choices_to={"role": "student"},
     )
-    subject = models.CharField(max_length=255)
+    subject = models.ForeignKey("subjects.Subject", on_delete=models.PROTECT, related_name="pairings")
     status = models.CharField(
         max_length=20, choices=PairingStatus.choices, default=PairingStatus.ACTIVE
     )
@@ -36,8 +51,17 @@ class TeacherStudentPairing(BaseModel):
         related_name="created_pairings",
     )
 
+    objects = PairingQuerySet.as_manager()
+
     class Meta:
-        unique_together = ["teacher", "student", "subject"]
+        constraints = [
+            # Ended pairings are history; a teacher may be re-paired with the same student and subject.
+            models.UniqueConstraint(
+                fields=["teacher", "student", "subject"],
+                condition=~models.Q(status=PairingStatus.ENDED),
+                name="unique_open_pairing",
+            ),
+        ]
         ordering = ["-created_at"]
 
     def __str__(self):

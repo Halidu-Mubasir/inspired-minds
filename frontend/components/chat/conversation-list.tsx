@@ -4,18 +4,21 @@ import { MessageSquare } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorState } from "@/components/shared/error-state";
 import { ConversationItem } from "./conversation-item";
 import type { Conversation } from "@/lib/api/chat";
 
 interface ConversationListProps {
   conversations: Conversation[];
   loading: boolean;
+  error?: unknown;
+  onRetry?: () => void;
   activeId: string | null;
   currentUserId?: string;
   onSelect: (id: string) => void;
 }
 
-export function ConversationList({ conversations, loading, activeId, currentUserId, onSelect }: ConversationListProps) {
+export function ConversationList({ conversations, loading, error, onRetry, activeId, currentUserId, onSelect }: ConversationListProps) {
   const [search, setSearch] = useState("");
 
   const filtered = conversations.filter((c) => {
@@ -49,6 +52,8 @@ export function ConversationList({ conversations, loading, activeId, currentUser
               </div>
             ))}
           </div>
+        ) : error ? (
+          <ErrorState error={error} title="Couldn't load conversations" onRetry={onRetry} />
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center px-4">
             <div className="bg-muted rounded-full p-4 mb-3">

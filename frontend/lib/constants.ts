@@ -1,6 +1,9 @@
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 export const WS_BASE_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000/ws";
 
+/** Matches the backend's StandardPagination page size. */
+export const PAGE_SIZE = 20;
+
 export const USER_ROLES = {
   ADMIN: "admin",
   TEACHER: "teacher",
@@ -19,4 +22,10 @@ export const TOKEN_KEYS = {
   ACCESS: "inspired_minds_access",
   REFRESH: "inspired_minds_refresh",
   USER: "inspired_minds_user",
+} as const;
+
+/** Cookies the Next.js middleware reads to gate routes. They hold no credentials. */
+export const AUTH_COOKIES = {
+  SESSION: "inspired_minds_session", // refresh-token expiry, ms since epoch
+  ROLE: "inspired_minds_role",
 } as const;
