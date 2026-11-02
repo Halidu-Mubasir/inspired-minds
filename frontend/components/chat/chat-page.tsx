@@ -66,10 +66,13 @@ export function ChatPage() {
   // Mark as read when conversation opens
   useEffect(() => {
     if (activeId) {
-      chatApi.markRead(activeId).catch(() => {}); // best effort; the socket "read" event also marks messages
+      chatApi
+        .markRead(activeId)
+        .then(() => queryClient.invalidateQueries({ queryKey: queryKeys.mySummary }))
+        .catch(() => {}); // best effort; the socket "read" event also marks messages
       updateConvUnread(activeId);
     }
-  }, [activeId, updateConvUnread]);
+  }, [activeId, updateConvUnread, queryClient]);
 
   // Update conversation preview on new messages
   useEffect(() => {

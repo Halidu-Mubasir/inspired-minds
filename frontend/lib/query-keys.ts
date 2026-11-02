@@ -6,6 +6,7 @@ type Params = Record<string, string>;
 
 export const queryKeys = {
   dashboardStats: ["dashboard-stats"] as const,
+  mySummary: ["my-summary"] as const,
   subjects: ["subjects"] as const,
   conversations: ["conversations"] as const,
 

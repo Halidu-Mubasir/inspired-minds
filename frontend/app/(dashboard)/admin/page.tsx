@@ -12,6 +12,7 @@ export default function AdminDashboardPage() {
     total_teachers: data?.total_teachers ?? "—",
     total_students: data?.total_students ?? "—",
     active_pairings: data?.active_pairings ?? "—",
+    lessons_this_week: data?.lessons_this_week ?? "—",
   };
 
   return (
@@ -32,7 +33,7 @@ export default function AdminDashboardPage() {
         <StatCard
           title="Total Students"
           value={stats.total_students}
-          description="Registered students"
+          description="Active students on the platform"
           icon={Users}
         />
         <StatCard
@@ -43,8 +44,8 @@ export default function AdminDashboardPage() {
         />
         <StatCard
           title="Lessons This Week"
-          value="—"
-          description="Scheduled this week"
+          value={stats.lessons_this_week}
+          description="Scheduled in the next 7 days"
           icon={BookOpen}
         />
       </div>

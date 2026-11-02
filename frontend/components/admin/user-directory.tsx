@@ -13,8 +13,11 @@ import { PaginationControls } from "@/components/shared/pagination-controls";
 import { UserCard } from "@/components/admin/user-card";
 import { AddTeacherSheet } from "@/components/admin/add-teacher-sheet";
 import { AddStudentSheet } from "@/components/admin/add-student-sheet";
+import { EditUserSheet } from "@/components/admin/edit-user-sheet";
+import { storeSavedUser } from "@/components/admin/account-status-button";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { usersApi } from "@/lib/api/users";
+import type { User } from "@/lib/api/users";
 import { queryKeys } from "@/lib/query-keys";
 
 type FilterConfig = {
@@ -68,6 +71,7 @@ export function UserDirectory({ role, title, subtitle, icon, filters = [] }: Use
   const [filterValues, setFilterValues] = useState<Record<string, string>>({});
   const [page, setPage] = useState(1);
   const [addOpen, setAddOpen] = useState(false);
+  const [editing, setEditing] = useState<User | null>(null);
   const debouncedSearch = useDebouncedValue(search);
 
   const params: Record<string, string> = { page: String(page) };
@@ -152,7 +156,7 @@ export function UserDirectory({ role, title, subtitle, icon, filters = [] }: Use
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {users.map((user) => (
-              <UserCard key={user.id} user={user} basePath={config.basePath} />
+              <UserCard key={user.id} user={user} basePath={config.basePath} onEdit={setEditing} />
             ))}
           </div>
           <PaginationControls page={page} count={list.data.count} onPageChange={setPage} />
@@ -160,6 +164,12 @@ export function UserDirectory({ role, title, subtitle, icon, filters = [] }: Use
       )}
 
       <config.AddSheet open={addOpen} onClose={() => setAddOpen(false)} onCreated={handleCreated} />
+      <EditUserSheet
+        user={editing}
+        role={role}
+        onClose={() => setEditing(null)}
+        onSaved={(saved) => storeSavedUser(queryClient, role, saved)}
+      />
     </div>
   );
 }

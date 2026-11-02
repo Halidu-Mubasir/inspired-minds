@@ -1,10 +1,10 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
-import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Mail, Phone, MapPin } from "lucide-react";
+import { useParams } from "next/navigation";
+import { Mail, Phone, MapPin } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { UserDetailToolbar } from "@/components/admin/user-detail-toolbar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { PairingHistoryCard } from "@/components/admin/pairing-history-card";
@@ -16,7 +16,6 @@ import { queryKeys } from "@/lib/query-keys";
 
 export default function TeacherDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const router = useRouter();
   const teacherQuery = useQuery({ queryKey: queryKeys.teachers.detail(id), queryFn: () => usersApi.getTeacher(id) });
   const pairingParams = { teacher: id, page_size: "100" };
   const pairingsQuery = useQuery({
@@ -34,9 +33,7 @@ export default function TeacherDetailPage() {
 
   return (
     <div className="space-y-5 max-w-3xl">
-      <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => router.back()}>
-        <ArrowLeft className="h-4 w-4" /> Back
-      </Button>
+      <UserDetailToolbar user={teacher} role="teacher" />
 
       {/* Profile Card */}
       <Card>
