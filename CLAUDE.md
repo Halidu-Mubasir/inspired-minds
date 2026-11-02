@@ -34,6 +34,7 @@ Learning Management System for Inspired Minds Home Tuition Agency. Manages teach
 | `pairings` | TeacherStudentPairing management |
 | `lessons` | Lesson plans + LessonTopic |
 | `resources` | File uploads (private + general library) |
+| `enquiries` | Public website submissions (contact enquiries, tutor applications); reviewed in Django admin |
 | `chat` | Real-time WebSocket chat (Django Channels) |
 | `ai_services` | AI chatbot + tools (abstract provider pattern) |
 
@@ -94,8 +95,10 @@ SECRET_KEY=your-secret-key
 DEBUG=True
 DATABASE_URL=postgres://user:pass@localhost:5432/inspired_minds
 ALLOWED_HOSTS=localhost,127.0.0.1
-CORS_ALLOWED_ORIGINS=http://localhost:3000
+CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001  # LMS frontend + marketing website
 REDIS_URL=redis://localhost:6379/0
+PRIVATE_MEDIA_ROOT=  # optional; resource uploads, never web-served (default backend/private_media)
+ENQUIRY_THROTTLE_RATE=10/hour  # optional; public website form rate limit per IP
 AI_PROVIDER=anthropic
 AI_MODEL=claude-sonnet-4-20250514
 ANTHROPIC_API_KEY=
@@ -106,6 +109,11 @@ OPENAI_API_KEY=
 ```
 NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
 NEXT_PUBLIC_WS_URL=ws://localhost:8000/ws
+```
+
+### Website (.env.local)
+```
+NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1  # contact + tutor application forms post here
 ```
 
 ## Implementation Phases

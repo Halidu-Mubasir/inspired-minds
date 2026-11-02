@@ -61,7 +61,8 @@ class MessageListView(generics.ListAPIView):
         user = self.request.user
         if conversation.pairing.teacher != user and conversation.pairing.student != user:
             return Message.objects.none()
-        return conversation.messages.select_related("sender")
+        # Newest first, so page 1 is the latest messages; clients reverse each page for display.
+        return conversation.messages.select_related("sender").order_by("-created_at")
 
 
 class MarkReadView(APIView):

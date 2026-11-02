@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     "pairings",
     "lessons",
     "resources",
+    "enquiries",
 ]
 
 MIDDLEWARE = [
@@ -132,6 +133,10 @@ REST_FRAMEWORK = {
         "rest_framework.filters.SearchFilter",
         "rest_framework.filters.OrderingFilter",
     ],
+    "DEFAULT_THROTTLE_RATES": {
+        # Public website forms, per client IP.
+        "enquiries": config("ENQUIRY_THROTTLE_RATE", default="10/hour"),
+    },
 }
 
 # JWT

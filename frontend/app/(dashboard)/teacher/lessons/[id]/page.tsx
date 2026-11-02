@@ -44,7 +44,7 @@ export default function TeacherLessonDetailPage() {
 
   useEffect(() => {
     lessonsApi.get(id).then(setLesson).catch(() => {}).finally(() => setLoading(false));
-    resourcesApi.getAll({ lesson_id: id }).then((res) => setResources(res.results ?? (res as unknown as Resource[]))).catch(() => {});
+    resourcesApi.getAll({ lesson: id }).then((res) => setResources(res.results ?? (res as unknown as Resource[]))).catch(() => {});
   }, [id]);
 
   async function handleStatusChange(newStatus: string) {

@@ -52,7 +52,14 @@ class TeacherStudentPairing(BaseModel):
     objects = PairingQuerySet.as_manager()
 
     class Meta:
-        unique_together = ["teacher", "student", "subject"]
+        constraints = [
+            # Ended pairings are history; a teacher may be re-paired with the same student and subject.
+            models.UniqueConstraint(
+                fields=["teacher", "student", "subject"],
+                condition=~models.Q(status=PairingStatus.ENDED),
+                name="unique_open_pairing",
+            ),
+        ]
         ordering = ["-created_at"]
 
     def __str__(self):

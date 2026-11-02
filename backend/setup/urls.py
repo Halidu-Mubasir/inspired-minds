@@ -21,6 +21,7 @@ urlpatterns = [
     path("api/v1/auth/", include("users.urls")),
     path("api/v1/pairings/", include("pairings.urls")),
     path("api/v1/lessons/", include("lessons.urls")),
+    path("api/v1/enquiries/", include("enquiries.urls")),
     path("api/v1/resources/", include("resources.urls")),
     path("api/v1/chat/", include("chat.urls")),
     # Swagger

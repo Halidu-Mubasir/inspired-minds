@@ -94,3 +94,14 @@ class PairingUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = TeacherStudentPairing
         fields = ["status", "end_date", "notes"]
+
+    def validate_status(self, value):
+        pairing = self.instance
+        reopening = pairing and pairing.status == PairingStatus.ENDED and value != PairingStatus.ENDED
+        if reopening and TeacherStudentPairing.objects.filter(
+            teacher=pairing.teacher, student=pairing.student, subject=pairing.subject
+        ).exclude(status=PairingStatus.ENDED).exclude(pk=pairing.pk).exists():
+            raise serializers.ValidationError(
+                "An active pairing already exists for this teacher, student, and subject."
+            )
+        return value

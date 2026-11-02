@@ -34,12 +34,17 @@ export function useChat(conversationId: string | null, currentUserId?: string): 
     setIsLoadingHistory(true);
     try {
       const res = await chatApi.getMessages(convId, { page: String(pageNum), page_size: "50" });
-      const results = res.results ?? [];
+      // The API pages newest-first; display oldest-first.
+      const results = [...(res.results ?? [])].reverse();
       setHasMore(!!res.next);
       if (pageNum === 1) {
         setMessages(results);
       } else {
-        setMessages((prev) => [...results, ...prev]);
+        // Messages received since page 1 shift page boundaries, so older pages can overlap.
+        setMessages((prev) => {
+          const seen = new Set(prev.map((m) => m.id));
+          return [...results.filter((m) => !seen.has(m.id)), ...prev];
+        });
       }
     } catch {
       // silently ignore
