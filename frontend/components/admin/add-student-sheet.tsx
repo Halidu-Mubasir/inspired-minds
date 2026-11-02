@@ -15,6 +15,8 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { SubjectPicker } from "@/components/shared/subject-picker";
+import { useSubjects } from "@/hooks/use-subjects";
 import { usersApi } from "@/lib/api/users";
 import type { User } from "@/lib/api/users";
 
@@ -35,7 +37,7 @@ const schema = z.object({
   education_level: z.string().min(1, "Required"),
   school_name: z.string().optional(),
   grade_or_year: z.string().optional(),
-  subjects_of_interest: z.string().optional(),
+  subjects_of_interest: z.array(z.string()),
   parent_guardian_name: z.string().optional(),
   parent_guardian_phone: z.string().optional(),
   parent_guardian_email: z.string().optional(),
@@ -51,13 +53,14 @@ interface AddStudentSheetProps {
 
 export function AddStudentSheet({ open, onClose, onCreated }: AddStudentSheetProps) {
   const [loading, setLoading] = useState(false);
+  const subjectOptions = useSubjects(open);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       email: "", first_name: "", last_name: "", phone_number: "",
       password: "", education_level: "", school_name: "", grade_or_year: "",
-      subjects_of_interest: "", parent_guardian_name: "",
+      subjects_of_interest: [], parent_guardian_name: "",
       parent_guardian_phone: "", parent_guardian_email: "",
     },
   });
@@ -65,10 +68,6 @@ export function AddStudentSheet({ open, onClose, onCreated }: AddStudentSheetPro
   async function onSubmit(values: FormValues) {
     setLoading(true);
     try {
-      const subjects = values.subjects_of_interest
-        ? values.subjects_of_interest.split(",").map((s) => s.trim()).filter(Boolean)
-        : [];
-
       const payload: Record<string, unknown> = {
         email: values.email,
         first_name: values.first_name,
@@ -78,7 +77,7 @@ export function AddStudentSheet({ open, onClose, onCreated }: AddStudentSheetPro
         ...(values.phone_number && { phone_number: values.phone_number }),
         ...(values.school_name && { school_name: values.school_name }),
         ...(values.grade_or_year && { grade_or_year: values.grade_or_year }),
-        subjects_of_interest: subjects,
+        subjects_of_interest: values.subjects_of_interest,
         ...(values.parent_guardian_name && { parent_guardian_name: values.parent_guardian_name }),
         ...(values.parent_guardian_phone && { parent_guardian_phone: values.parent_guardian_phone }),
         ...(values.parent_guardian_email && { parent_guardian_email: values.parent_guardian_email }),
@@ -176,8 +175,8 @@ export function AddStudentSheet({ open, onClose, onCreated }: AddStudentSheetPro
             </div>
             <FormField control={form.control} name="subjects_of_interest" render={({ field }) => (
               <FormItem>
-                <FormLabel>Subjects (comma-separated)</FormLabel>
-                <FormControl><Input placeholder="Math, English" {...field} /></FormControl>
+                <FormLabel>Subjects of Interest</FormLabel>
+                <SubjectPicker subjects={subjectOptions} value={field.value} onChange={field.onChange} />
                 <FormMessage />
               </FormItem>
             )} />

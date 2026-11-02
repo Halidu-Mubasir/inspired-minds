@@ -12,7 +12,7 @@ def _get_user_conversations(user):
     """Return Conversation queryset visible to this user, annotated with unread_count."""
     qs = Conversation.objects.filter(
         Q(pairing__teacher=user) | Q(pairing__student=user)
-    ).select_related("pairing__teacher", "pairing__student").annotate(
+    ).select_related("pairing__teacher", "pairing__student", "pairing__subject").annotate(
         unread_count=Count(
             "messages",
             filter=Q(messages__is_read=False) & ~Q(messages__sender=user),

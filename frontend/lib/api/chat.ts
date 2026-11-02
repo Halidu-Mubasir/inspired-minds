@@ -11,6 +11,8 @@ export interface ConversationParticipant {
 export interface Conversation {
   id: string;
   pairing_id: string;
+  /** Chat on an ended pairing is read-only history. */
+  pairing_status: "active" | "paused" | "ended";
   subject: string;
   teacher: ConversationParticipant;
   student: ConversationParticipant;

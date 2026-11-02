@@ -10,6 +10,15 @@ class LessonStatus(models.TextChoices):
     CANCELLED = "cancelled", "Cancelled"
 
 
+# Allowed status changes. Completed is final: it is what lesson history and reporting count.
+LESSON_STATUS_TRANSITIONS = {
+    LessonStatus.DRAFT: {LessonStatus.SCHEDULED, LessonStatus.COMPLETED, LessonStatus.CANCELLED},
+    LessonStatus.SCHEDULED: {LessonStatus.DRAFT, LessonStatus.COMPLETED, LessonStatus.CANCELLED},
+    LessonStatus.CANCELLED: {LessonStatus.DRAFT, LessonStatus.SCHEDULED},
+    LessonStatus.COMPLETED: set(),
+}
+
+
 class LessonQuerySet(models.QuerySet):
     def for_user(self, user):
         """Lessons on pairings the user takes part in (admins see all)."""
@@ -25,7 +34,7 @@ class LessonQuerySet(models.QuerySet):
 class Lesson(BaseModel):
     pairing = models.ForeignKey(
         "pairings.TeacherStudentPairing",
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,  # pairings are ended, not deleted
         related_name="lessons",
     )
     title = models.CharField(max_length=255)

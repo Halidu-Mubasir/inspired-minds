@@ -8,6 +8,7 @@ class TeacherProfileInline(admin.StackedInline):
     can_delete = False
     verbose_name_plural = "Teacher Profile"
     extra = 0
+    filter_horizontal = ["subjects"]
 
 
 class StudentProfileInline(admin.StackedInline):
@@ -15,6 +16,7 @@ class StudentProfileInline(admin.StackedInline):
     can_delete = False
     verbose_name_plural = "Student Profile"
     extra = 0
+    filter_horizontal = ["subjects_of_interest"]
 
 
 @admin.register(CustomUser)
@@ -48,11 +50,20 @@ class CustomUserAdmin(UserAdmin):
 
 @admin.register(TeacherProfile)
 class TeacherProfileAdmin(admin.ModelAdmin):
-    list_display = ["user", "subjects", "years_of_experience", "is_available"]
+    list_display = ["user", "subject_names", "years_of_experience", "is_available"]
     search_fields = ["user__email", "user__first_name", "user__last_name"]
+    filter_horizontal = ["subjects"]
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).prefetch_related("subjects")
+
+    @admin.display(description="Subjects")
+    def subject_names(self, obj):
+        return ", ".join(s.name for s in obj.subjects.all())
 
 
 @admin.register(StudentProfile)
 class StudentProfileAdmin(admin.ModelAdmin):
     list_display = ["user", "education_level", "school_name", "grade_or_year"]
     search_fields = ["user__email", "user__first_name", "user__last_name"]
+    filter_horizontal = ["subjects_of_interest"]

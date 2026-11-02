@@ -11,7 +11,7 @@ from users.serializers import (
     TeacherProfileSerializer, StudentProfileSerializer,
 )
 from users.permissions import IsAdmin
-from users.tokens import revoke_refresh_tokens
+from users.services import deactivate_user
 
 
 class MeView(RetrieveUpdateAPIView):
@@ -64,11 +64,8 @@ class TeacherDetailView(RetrieveUpdateDestroyAPIView):
     queryset = CustomUser.objects.filter(role="teacher").select_related("teacher_profile")
 
     def destroy(self, request, *args, **kwargs):
-        user = self.get_object()
-        user.is_active = False
-        user.save()
-        revoke_refresh_tokens(user)
-        return Response({"message": "Teacher deactivated."}, status=status.HTTP_200_OK)
+        paused = deactivate_user(self.get_object())
+        return Response({"message": "Teacher deactivated.", "pairings_paused": paused}, status=status.HTTP_200_OK)
 
 
 # --- Admin: Student Management ---
@@ -97,11 +94,8 @@ class StudentDetailView(RetrieveUpdateDestroyAPIView):
     queryset = CustomUser.objects.filter(role="student").select_related("student_profile")
 
     def destroy(self, request, *args, **kwargs):
-        user = self.get_object()
-        user.is_active = False
-        user.save()
-        revoke_refresh_tokens(user)
-        return Response({"message": "Student deactivated."}, status=status.HTTP_200_OK)
+        paused = deactivate_user(self.get_object())
+        return Response({"message": "Student deactivated.", "pairings_paused": paused}, status=status.HTTP_200_OK)
 
 
 # --- Admin: Dashboard Stats ---

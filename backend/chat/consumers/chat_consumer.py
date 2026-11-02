@@ -102,10 +102,19 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def _save_message(self, content):
+        from django.db import transaction
         from chat.models import Conversation, Message
         from chat.serializers import MessageSerializer
+        from pairings.models import PairingStatus
         try:
-            conversation = Conversation.objects.get(pk=self.conversation_id)
+            conversation = Conversation.objects.select_related("pairing").get(pk=self.conversation_id)
+        except Conversation.DoesNotExist:
+            return None
+        # An ended pairing's chat is kept as read-only history.
+        if conversation.pairing.status == PairingStatus.ENDED:
+            return None
+
+        with transaction.atomic():
             msg = Message.objects.create(
                 conversation=conversation,
                 sender=self.user,
@@ -117,13 +126,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
             conversation.last_message_preview = preview
             conversation.save(update_fields=["last_message_at", "last_message_preview"])
 
-            # Serialize for broadcast
-            data = MessageSerializer(msg).data
-            data["id"] = str(data["id"])
-            data["conversation"] = str(data["conversation"])
-            return data
-        except Exception:
-            return None
+        # Serialize for broadcast
+        data = MessageSerializer(msg).data
+        data["id"] = str(data["id"])
+        data["conversation"] = str(data["conversation"])
+        return data
 
     @database_sync_to_async
     def _mark_read(self):

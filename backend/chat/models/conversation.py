@@ -5,7 +5,7 @@ from setup.base_model import BaseModel
 class Conversation(BaseModel):
     pairing = models.OneToOneField(
         "pairings.TeacherStudentPairing",
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,  # keep chat history; pairings are ended, not deleted
         related_name="conversation",
     )
     last_message_at = models.DateTimeField(null=True, blank=True)

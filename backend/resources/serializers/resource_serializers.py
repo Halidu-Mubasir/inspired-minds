@@ -1,6 +1,7 @@
 from django.urls import reverse
 from rest_framework import serializers
 from resources.models import Resource, ResourceVisibility
+from subjects.serializers import SubjectNameField
 
 ALLOWED_EXTENSIONS = {
     "pdf", "doc", "docx", "ppt", "pptx", "xls", "xlsx",
@@ -17,6 +18,7 @@ class UploadedBySerializer(serializers.Serializer):
 
 class ResourceListSerializer(serializers.ModelSerializer):
     uploaded_by = UploadedBySerializer(read_only=True)
+    subject = SubjectNameField(read_only=True)
 
     class Meta:
         model = Resource
@@ -29,6 +31,7 @@ class ResourceListSerializer(serializers.ModelSerializer):
 
 class ResourceDetailSerializer(serializers.ModelSerializer):
     uploaded_by = UploadedBySerializer(read_only=True)
+    subject = SubjectNameField(required=False, allow_null=True)
     file_url = serializers.SerializerMethodField()
 
     class Meta:
@@ -52,6 +55,7 @@ class ResourceDetailSerializer(serializers.ModelSerializer):
 
 class UploadResourceSerializer(serializers.ModelSerializer):
     file = serializers.FileField()
+    subject = SubjectNameField(required=False, allow_null=True)
     pairing_id = serializers.UUIDField(required=False, allow_null=True)
     lesson_id = serializers.UUIDField(required=False, allow_null=True)
 

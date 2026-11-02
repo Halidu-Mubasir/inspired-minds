@@ -36,7 +36,7 @@ class LessonListCreateView(generics.ListCreateAPIView):
     def get_queryset(self):
         return (
             Lesson.objects.for_user(self.request.user)
-            .select_related("pairing__teacher", "pairing__student")
+            .select_related("pairing__teacher", "pairing__student", "pairing__subject")
             .prefetch_related("topics")
         )
 
@@ -58,7 +58,7 @@ class LessonDetailView(generics.RetrieveUpdateDestroyAPIView):
     def get_queryset(self):
         return (
             Lesson.objects.for_user(self.request.user)
-            .select_related("pairing__teacher", "pairing__student")
+            .select_related("pairing__teacher", "pairing__student", "pairing__subject")
             .prefetch_related("topics")
         )
 

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Clock, CalendarDays, CheckCircle, XCircle, Upload } from "lucide-react";
+import { ArrowLeft, Clock, CalendarCheck, CalendarDays, CheckCircle, XCircle, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -54,8 +54,9 @@ export default function TeacherLessonDetailPage() {
       const updated = await lessonsApi.updateStatus(id, newStatus);
       setLesson(updated);
       toast.success(`Lesson marked as ${newStatus}`);
-    } catch {
-      toast.error("Failed to update status");
+    } catch (error: unknown) {
+      const err = error as { data?: { status?: string[] } };
+      toast.error(err?.data?.status?.[0] ?? "Failed to update status");
     } finally {
       setSaving(null);
     }
@@ -94,6 +95,12 @@ export default function TeacherLessonDetailPage() {
         </Button>
         <div className="flex items-center gap-2">
           <Badge className={status.className}>{status.label}</Badge>
+          {lesson.status === "draft" || lesson.status === "cancelled" ? (
+            <Button size="sm" variant="outline" className="gap-1.5 h-7 text-xs" disabled={!!saving}
+              onClick={() => handleStatusChange("scheduled")}>
+              <CalendarCheck className="h-3.5 w-3.5" /> Schedule
+            </Button>
+          ) : null}
           {lesson.status === "scheduled" || lesson.status === "draft" ? (
             <Button size="sm" className="gap-1.5 h-7 text-xs bg-emerald-600 hover:bg-emerald-700" disabled={!!saving}
               onClick={() => handleStatusChange("completed")}>

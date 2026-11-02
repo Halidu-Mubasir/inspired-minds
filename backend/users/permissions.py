@@ -36,6 +36,15 @@ class IsAdminOrTeacherOrReadOnly(BasePermission):
         return request.user.role in (UserRole.ADMIN, UserRole.TEACHER)
 
 
+class IsAdminOrReadOnly(BasePermission):
+    """Any authenticated user may read; only admins may write."""
+
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        return request.method in SAFE_METHODS or request.user.role == UserRole.ADMIN
+
+
 class IsOwnerOrAdmin(BasePermission):
     def has_object_permission(self, request, view, obj):
         if request.user.role == UserRole.ADMIN:

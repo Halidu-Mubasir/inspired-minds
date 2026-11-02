@@ -23,7 +23,7 @@ from users.permissions import IsAdminOrTeacherOrReadOnly
 class ResourceFilter(django_filters.FilterSet):
     resource_type = django_filters.CharFilter(field_name="resource_type")
     visibility = django_filters.CharFilter(field_name="visibility")
-    subject = django_filters.CharFilter(field_name="subject", lookup_expr="icontains")
+    subject = django_filters.CharFilter(field_name="subject__name", lookup_expr="icontains")
     pairing = django_filters.UUIDFilter(field_name="pairing__id")
     lesson = django_filters.UUIDFilter(field_name="lesson__id")
 
@@ -37,11 +37,11 @@ class ResourceListCreateView(generics.ListCreateAPIView):
     parser_classes = [MultiPartParser, FormParser, JSONParser]
     filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_class = ResourceFilter
-    search_fields = ["title", "subject", "description"]
+    search_fields = ["title", "subject__name", "description"]
 
     def get_queryset(self):
         user = self.request.user
-        qs = Resource.objects.visible_to(user).select_related("uploaded_by")
+        qs = Resource.objects.visible_to(user).select_related("uploaded_by", "subject")
         if user.role == UserRole.TEACHER:
             # Other teachers' library uploads are listed by the library endpoint, not here.
             qs = qs.filter(Q(pairing__teacher=user) | Q(uploaded_by=user))
@@ -89,12 +89,12 @@ class LibraryListView(generics.ListCreateAPIView):
     permission_classes = [IsAdminOrTeacherOrReadOnly]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
     filter_backends = [DjangoFilterBackend, SearchFilter]
-    search_fields = ["title", "subject", "description"]
+    search_fields = ["title", "subject__name", "description"]
 
     def get_queryset(self):
         return Resource.objects.filter(
             visibility=ResourceVisibility.LIBRARY
-        ).select_related("uploaded_by")
+        ).select_related("uploaded_by", "subject")
 
     def get_serializer_class(self):
         if self.request.method == "POST":

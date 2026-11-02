@@ -21,7 +21,9 @@ class StudentProfile(BaseModel):
     )
     school_name = models.CharField(max_length=255, null=True, blank=True)
     grade_or_year = models.CharField(max_length=50, null=True, blank=True)
-    subjects_of_interest = models.JSONField(default=list, blank=True)
+    subjects_of_interest = models.ManyToManyField(
+        "subjects.Subject", blank=True, related_name="interested_students"
+    )
     parent_guardian_name = models.CharField(max_length=255, null=True, blank=True)
     parent_guardian_phone = models.CharField(max_length=20, null=True, blank=True)
     parent_guardian_email = models.EmailField(null=True, blank=True)

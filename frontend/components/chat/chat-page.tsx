@@ -143,13 +143,19 @@ export function ChatPage() {
               onLoadMore={loadMore}
             />
 
-            <MessageInput
-              onSend={(content) => {
-                sendMessage(content);
-              }}
-              onTyping={sendTyping}
-              disabled={!isConnected}
-            />
+            {activeConv?.pairing_status === "ended" ? (
+              <p className="px-4 py-3 border-t text-center text-xs text-muted-foreground">
+                This pairing has ended. The conversation is kept as read-only history.
+              </p>
+            ) : (
+              <MessageInput
+                onSend={(content) => {
+                  sendMessage(content);
+                }}
+                onTyping={sendTyping}
+                disabled={!isConnected}
+              />
+            )}
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center">

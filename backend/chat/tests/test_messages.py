@@ -3,7 +3,9 @@ from datetime import timedelta
 from django.test import TestCase
 from django.utils import timezone
 
+from chat.consumers.chat_consumer import ChatConsumer
 from chat.models import Message
+from pairings.models import PairingStatus
 from setup.testing import client_for, make_pairing, make_user
 
 
@@ -32,3 +34,29 @@ class MessageHistoryTests(TestCase):
         res = self.get_page(3)
         self.assertEqual([m["content"] for m in res.data["results"]], ["message 0"])
         self.assertIsNone(res.data["next"])
+
+
+class EndedPairingChatTests(TestCase):
+    """The consumer's DB helper is called directly; the socket plumbing is Channels' concern."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.teacher = make_user("teacher", "teacher")
+        cls.pairing = make_pairing(cls.teacher, make_user("student", "student"))
+
+    def save_message(self):
+        consumer = ChatConsumer()
+        consumer.conversation_id = self.pairing.conversation.id
+        consumer.user = self.teacher
+        # Bypass the async wrapper (and its descriptor) to run the sync body in this test's transaction.
+        return ChatConsumer.__dict__["_save_message"].func(consumer, "hello")
+
+    def test_messages_are_saved_on_open_pairing(self):
+        self.assertEqual(self.save_message()["content"], "hello")
+        self.assertEqual(Message.objects.count(), 1)
+
+    def test_ended_pairing_chat_is_read_only(self):
+        self.pairing.status = PairingStatus.ENDED
+        self.pairing.save()
+        self.assertIsNone(self.save_message())
+        self.assertFalse(Message.objects.exists())

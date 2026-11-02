@@ -24,6 +24,7 @@ INSTALLED_APPS = [
     "drf_yasg",
     "channels",
     # Local apps
+    "subjects",
     "chat",
     "users",
     "pairings",

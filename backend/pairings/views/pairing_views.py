@@ -18,7 +18,7 @@ class PairingFilter(django_filters.FilterSet):
     teacher = django_filters.UUIDFilter(field_name="teacher__id")
     student = django_filters.UUIDFilter(field_name="student__id")
     status = django_filters.ChoiceFilter(choices=PairingStatus.choices)
-    subject = django_filters.CharFilter(lookup_expr="icontains")
+    subject = django_filters.CharFilter(field_name="subject__name", lookup_expr="icontains")
 
     class Meta:
         model = TeacherStudentPairing
@@ -30,13 +30,13 @@ class PairingListCreateView(ListCreateAPIView):
     permission_classes = [IsAdmin]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = PairingFilter
-    search_fields = ["subject", "teacher__first_name", "teacher__last_name", "student__first_name", "student__last_name"]
+    search_fields = ["subject__name", "teacher__first_name", "teacher__last_name", "student__first_name", "student__last_name"]
     ordering_fields = ["created_at", "start_date", "status"]
     ordering = ["-created_at"]
 
     def get_queryset(self):
         return TeacherStudentPairing.objects.select_related(
-            "teacher", "student", "created_by"
+            "teacher", "student", "created_by", "subject"
         ).all()
 
     def get_serializer_class(self):
@@ -54,7 +54,7 @@ class PairingListCreateView(ListCreateAPIView):
 class PairingDetailView(RetrieveUpdateDestroyAPIView):
     """Admin: retrieve, update, or end a pairing."""
     permission_classes = [IsAdmin]
-    queryset = TeacherStudentPairing.objects.select_related("teacher", "student", "created_by")
+    queryset = TeacherStudentPairing.objects.select_related("teacher", "student", "created_by", "subject")
 
     def get_serializer_class(self):
         if self.request.method in ("PUT", "PATCH"):
@@ -77,7 +77,7 @@ class MyStudentsView(APIView):
     def get(self, request):
         pairings = TeacherStudentPairing.objects.filter(
             teacher=request.user, status=PairingStatus.ACTIVE
-        ).select_related("student", "student__student_profile")
+        ).select_related("student", "student__student_profile", "subject")
         serializer = PairingListSerializer(pairings, many=True)
         return Response(serializer.data)
 
@@ -89,7 +89,7 @@ class MyTeachersView(APIView):
     def get(self, request):
         pairings = TeacherStudentPairing.objects.filter(
             student=request.user, status=PairingStatus.ACTIVE
-        ).select_related("teacher", "teacher__teacher_profile")
+        ).select_related("teacher", "teacher__teacher_profile", "subject")
         serializer = PairingListSerializer(pairings, many=True)
         return Response(serializer.data)
 

@@ -22,19 +22,21 @@ class PairingQuerySet(models.QuerySet):
 
 
 class TeacherStudentPairing(BaseModel):
+    # PROTECT: a pairing carries lessons and chat history, so users who have one are
+    # deactivated rather than deleted, and pairings are ended rather than deleted.
     teacher = models.ForeignKey(
         "users.CustomUser",
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name="teacher_pairings",
         limit_choices_to={"role": "teacher"},
     )
     student = models.ForeignKey(
         "users.CustomUser",
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name="student_pairings",
         limit_choices_to={"role": "student"},
     )
-    subject = models.CharField(max_length=255)
+    subject = models.ForeignKey("subjects.Subject", on_delete=models.PROTECT, related_name="pairings")
     status = models.CharField(
         max_length=20, choices=PairingStatus.choices, default=PairingStatus.ACTIVE
     )

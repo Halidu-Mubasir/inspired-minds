@@ -8,7 +8,7 @@ class TeacherProfile(BaseModel):
         on_delete=models.CASCADE,
         related_name="teacher_profile",
     )
-    subjects = models.JSONField(default=list, blank=True)
+    subjects = models.ManyToManyField("subjects.Subject", blank=True, related_name="teachers")
     qualifications = models.TextField(null=True, blank=True)
     bio = models.TextField(null=True, blank=True)
     years_of_experience = models.PositiveIntegerField(default=0)

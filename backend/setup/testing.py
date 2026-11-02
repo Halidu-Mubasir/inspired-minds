@@ -4,6 +4,7 @@ from datetime import date
 from rest_framework.test import APIClient
 
 from pairings.models import TeacherStudentPairing
+from subjects.models import Subject
 from users.models import CustomUser
 
 
@@ -17,9 +18,13 @@ def make_user(role, name):
     )
 
 
+def make_subject(name="Mathematics"):
+    return Subject.objects.get_or_create(name=name)[0]
+
+
 def make_pairing(teacher, student, subject="Mathematics"):
     return TeacherStudentPairing.objects.create(
-        teacher=teacher, student=student, subject=subject, start_date=date.today()
+        teacher=teacher, student=student, subject=make_subject(subject), start_date=date.today()
     )
 
 

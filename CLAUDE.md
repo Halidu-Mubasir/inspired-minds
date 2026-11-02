@@ -35,6 +35,7 @@ Learning Management System for Inspired Minds Home Tuition Agency. Manages teach
 | `lessons` | Lesson plans + LessonTopic |
 | `resources` | File uploads (private + general library) |
 | `enquiries` | Public website submissions (contact enquiries, tutor applications); reviewed in Django admin |
+| `subjects` | Curated Subject list used by pairings, resources and profiles |
 | `chat` | Real-time WebSocket chat (Django Channels) |
 | `ai_services` | AI chatbot + tools (abstract provider pattern) |
 
@@ -44,6 +45,9 @@ Learning Management System for Inspired Minds Home Tuition Agency. Manages teach
 - Pairing is the central relationship — lessons, resources, conversations hang off it
 - Resource visibility: `private` (student-specific) or `library` (all students)
 - Conversation auto-created when pairing is created
+- History is never deleted: users are deactivated (`users.services.deactivate_user`, which also pauses their pairings), pairings are ended, subjects are retired (`is_active=False`); FKs onto users/pairings/subjects use `PROTECT`
+- Subjects are exchanged over the API by name (`SubjectNameField`), validated against active `Subject` rows
+- Lesson status changes are limited by `LESSON_STATUS_TRANSITIONS` (completed is final); chat on an ended pairing is read-only
 - AI providers: abstract `BaseChatProvider` ABC with concrete adapters
 
 ### Running Backend

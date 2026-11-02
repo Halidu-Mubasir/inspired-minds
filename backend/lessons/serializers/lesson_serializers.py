@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from lessons.models import Lesson, LessonTopic
+from lessons.models import Lesson, LessonTopic, LESSON_STATUS_TRANSITIONS
 
 
 class LessonTopicSerializer(serializers.ModelSerializer):
@@ -10,7 +10,7 @@ class LessonTopicSerializer(serializers.ModelSerializer):
 
 class LessonListSerializer(serializers.ModelSerializer):
     pairing_id = serializers.UUIDField(source="pairing.id")
-    subject = serializers.CharField(source="pairing.subject")
+    subject = serializers.CharField(source="pairing.subject.name")
     teacher_name = serializers.SerializerMethodField()
     student_name = serializers.SerializerMethodField()
     topic_count = serializers.SerializerMethodField()
@@ -38,7 +38,7 @@ class LessonListSerializer(serializers.ModelSerializer):
 class LessonDetailSerializer(serializers.ModelSerializer):
     topics = LessonTopicSerializer(many=True, read_only=True)
     pairing_id = serializers.UUIDField(source="pairing.id", read_only=True)
-    subject = serializers.CharField(source="pairing.subject", read_only=True)
+    subject = serializers.CharField(source="pairing.subject.name", read_only=True)
     teacher = serializers.SerializerMethodField()
     student = serializers.SerializerMethodField()
 
@@ -108,3 +108,9 @@ class LessonStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = Lesson
         fields = ["status"]
+
+    def validate_status(self, value):
+        current = self.instance.status
+        if value != current and value not in LESSON_STATUS_TRANSITIONS[current]:
+            raise serializers.ValidationError(f"A {current} lesson cannot be marked {value}.")
+        return value
