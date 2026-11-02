@@ -1,8 +1,10 @@
+import sys
 from pathlib import Path
 from datetime import timedelta
 from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+RUNNING_TESTS = len(sys.argv) > 1 and sys.argv[1] == "test"
 
 SECRET_KEY = config("SECRET_KEY")
 DEBUG = config("DEBUG", default=False, cast=bool)
@@ -35,6 +37,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # serves collected static files (admin, API docs)
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -97,6 +100,11 @@ CHANNEL_LAYERS = {
     }
 }
 
+# Rate limits (DRF throttles) are counted in the cache. The default per-process memory cache
+# is fine for one dev server; with several workers set USE_REDIS_CACHE so they share counts.
+if config("USE_REDIS_CACHE", default=False, cast=bool):
+    CACHES = {"default": {"BACKEND": "django.core.cache.backends.redis.RedisCache", "LOCATION": REDIS_URL}}
+
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
@@ -111,6 +119,10 @@ USE_TZ = True
 
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
+}
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
@@ -141,6 +153,9 @@ REST_FRAMEWORK = {
         "login": config("LOGIN_THROTTLE_RATE", default="10/minute"),
         "password_reset": config("PASSWORD_RESET_THROTTLE_RATE", default="5/hour"),
     },
+    # Behind a reverse proxy, the number of proxies in front of Django, so throttles use the
+    # real client IP from X-Forwarded-For instead of the proxy's address.
+    "NUM_PROXIES": config("NUM_PROXIES", default=None, cast=lambda v: int(v) if v not in (None, "") else None),
 }
 
 # JWT — short-lived access tokens; the client refreshes them silently.
@@ -176,6 +191,30 @@ CORS_ALLOWED_ORIGINS = config(
     "CORS_ALLOWED_ORIGINS", default="http://localhost:3000"
 ).split(",")
 CORS_ALLOW_CREDENTIALS = True
+# Origins allowed to POST to the Django admin over HTTPS (e.g. https://api.example.com).
+CSRF_TRUSTED_ORIGINS = [o for o in config("CSRF_TRUSTED_ORIGINS", default="").split(",") if o]
+
+# Interactive API docs are for development; set EXPOSE_API_DOCS to publish them elsewhere.
+EXPOSE_API_DOCS = config("EXPOSE_API_DOCS", default=DEBUG, cast=bool)
+
+# Production hardening, on whenever DEBUG is off. Deploy behind a TLS-terminating proxy that
+# sets X-Forwarded-Proto; set SECURE_SSL_REDIRECT=False only for local plain-HTTP runs.
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    # The test client speaks plain HTTP, so `manage.py test` must not redirect to HTTPS.
+    SECURE_SSL_REDIRECT = config("SECURE_SSL_REDIRECT", default=not RUNNING_TESTS, cast=bool)
+    SECURE_REDIRECT_EXEMPT = [r"^healthz/$"]  # container health checks speak plain HTTP
+    SESSION_COOKIE_SECURE = config("SESSION_COOKIE_SECURE", default=True, cast=bool)
+    CSRF_COOKIE_SECURE = config("CSRF_COOKIE_SECURE", default=True, cast=bool)
+    # Start modestly; raise to a year (31536000) once HTTPS is known to work everywhere.
+    SECURE_HSTS_SECONDS = config("SECURE_HSTS_SECONDS", default=60 * 60 * 24 * 30, cast=int)
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = config("SECURE_HSTS_INCLUDE_SUBDOMAINS", default=True, cast=bool)
+    SECURE_HSTS_PRELOAD = config("SECURE_HSTS_PRELOAD", default=False, cast=bool)
+    X_FRAME_OPTIONS = "DENY"
+
+# Joining the browser HSTS preload list is a hard-to-undo opt-in, not a default; don't let
+# `check --deploy` (which CI runs with --fail-level WARNING) fail for leaving it off.
+SILENCED_SYSTEM_CHECKS = ["security.W021"]
 
 # Swagger
 SWAGGER_SETTINGS = {

@@ -1,7 +1,7 @@
 # Inspired Minds LMS
 
 ## Project Overview
-Learning Management System for Inspired Minds Home Tuition Agency. Manages teachers, students, pairings, lessons, resources, real-time chat, and AI-powered learning tools.
+Learning Management System for Inspired Minds Home Tuition Agency. Manages teachers, students, pairings, lessons, resources and real-time chat. AI learning tools are planned (Phase 5).
 
 ## Architecture
 - **Monorepo** with two sub-projects:
@@ -117,6 +117,12 @@ FRONTEND_URL=http://localhost:3000  # LMS frontend, used in password reset links
 EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend  # smtp.EmailBackend in production
 EMAIL_HOST= EMAIL_PORT=587 EMAIL_HOST_USER= EMAIL_HOST_PASSWORD= EMAIL_USE_TLS=True
 DEFAULT_FROM_EMAIL=Inspired Minds <no-reply@your-domain>  # sender for password reset emails
+# Production (all take effect when DEBUG=False)
+CSRF_TRUSTED_ORIGINS=https://api.your-domain  # needed for Django admin over HTTPS
+NUM_PROXIES=1  # proxies in front of Django, so rate limits see real client IPs
+USE_REDIS_CACHE=True  # share rate-limit counts across workers
+SECURE_SSL_REDIRECT=True SECURE_HSTS_SECONDS=2592000  # defaults; set False/0 only for plain-HTTP local runs
+EXPOSE_API_DOCS=False  # /swagger/ and /redoc/ default to on only when DEBUG
 ```
 
 ### Frontend (.env.local)
@@ -146,3 +152,10 @@ NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1  # contact + tutor application 
 ## Testing
 - Backend: `python manage.py test`
 - Frontend: Component tests with testing-library (to be set up)
+- CI (`.github/workflows/ci.yml`): backend tests on PostgreSQL (Python 3.13 and 3.14), migration drift check, `check --deploy --fail-level WARNING`; lint, type-check and build for `frontend/` and `website/`; `docker compose build`
+
+## Deployment
+- `docker compose up --build` runs Postgres, Redis, the API (Daphne, port 8000), the LMS (3000) and the website (3001); copy `.env.example` to `.env` and set `SECRET_KEY` first
+- `NEXT_PUBLIC_*` URLs are baked in at image build time (compose build args), not read at runtime
+- The API serves its own static files (whitenoise). `/media/` (avatars) must be served by a web server or object storage in production; `private_media/` must never be served
+- `/healthz/` is the liveness endpoint (no auth, exempt from the HTTPS redirect)
