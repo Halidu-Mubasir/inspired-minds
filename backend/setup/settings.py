@@ -1,10 +1,14 @@
 import sys
+import warnings
 from pathlib import Path
 from datetime import timedelta
 from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 RUNNING_TESTS = len(sys.argv) > 1 and sys.argv[1] == "test"
+if RUNNING_TESTS:
+    # Tests don't run collectstatic; whitenoise would warn about the missing STATIC_ROOT on every request.
+    warnings.filterwarnings("ignore", message="No directory at: ")
 
 SECRET_KEY = config("SECRET_KEY")
 DEBUG = config("DEBUG", default=False, cast=bool)
@@ -33,6 +37,7 @@ INSTALLED_APPS = [
     "lessons",
     "resources",
     "enquiries",
+    "ai_services",
 ]
 
 MIDDLEWARE = [
@@ -215,6 +220,16 @@ if not DEBUG:
 # Joining the browser HSTS preload list is a hard-to-undo opt-in, not a default; don't let
 # `check --deploy` (which CI runs with --fail-level WARNING) fail for leaving it off.
 SILENCED_SYSTEM_CHECKS = ["security.W021"]
+
+# AI (ai_services). AI features stay switched off (HTTP 503) until ANTHROPIC_API_KEY is set.
+AI_PROVIDER = config("AI_PROVIDER", default="anthropic")
+AI_MODEL = config("AI_MODEL", default="claude-sonnet-5-5")
+ANTHROPIC_API_KEY = config("ANTHROPIC_API_KEY", default="")
+# Daily caps per user, reset at local midnight (TIME_ZONE).
+AI_DAILY_TUTOR_MESSAGES = config("AI_DAILY_TUTOR_MESSAGES", default=50, cast=int)
+AI_DAILY_TEACHER_TOOL_RUNS = config("AI_DAILY_TEACHER_TOOL_RUNS", default=30, cast=int)
+# Largest resource file the tutor or teacher tools will send to the model.
+AI_MAX_ATTACHMENT_MB = config("AI_MAX_ATTACHMENT_MB", default=20, cast=int)
 
 # Swagger
 SWAGGER_SETTINGS = {

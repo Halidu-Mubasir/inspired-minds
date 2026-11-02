@@ -109,6 +109,33 @@ export async function apiRequest<T>(
   return res.json();
 }
 
+/**
+ * POSTs and reads a newline-delimited JSON stream, calling `onEvent` for each line as it
+ * arrives. Non-2xx responses throw like apiRequest (before any event is delivered).
+ */
+export async function apiStream<E>(
+  endpoint: string,
+  body: Record<string, unknown>,
+  onEvent: (event: E) => void
+): Promise<void> {
+  const res = await authorizedFetch(endpoint, { method: "POST", body });
+  if (!res.body) throw { status: res.status, data: { detail: "Empty response" } };
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffered = "";
+  for (;;) {
+    const { done, value } = await reader.read();
+    buffered += decoder.decode(value, { stream: !done });
+    const lines = buffered.split("\n");
+    buffered = done ? "" : lines.pop() ?? "";
+    for (const line of lines) {
+      if (line.trim()) onEvent(JSON.parse(line) as E);
+    }
+    if (done) return;
+  }
+}
+
 /** Fetches a file with the user's credentials and hands it to the browser as a download. */
 export async function apiDownload(endpoint: string, fileName: string): Promise<void> {
   const res = await authorizedFetch(endpoint);

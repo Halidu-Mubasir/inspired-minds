@@ -23,6 +23,7 @@ urlpatterns = [
     path("api/v1/subjects/", include("subjects.urls")),
     path("api/v1/resources/", include("resources.urls")),
     path("api/v1/chat/", include("chat.urls")),
+    path("api/v1/ai/", include("ai_services.urls")),
 ]
 
 if settings.EXPOSE_API_DOCS:

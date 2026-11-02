@@ -1,7 +1,7 @@
 # Inspired Minds LMS
 
 ## Project Overview
-Learning Management System for Inspired Minds Home Tuition Agency. Manages teachers, students, pairings, lessons, resources and real-time chat. AI learning tools are planned (Phase 5).
+Learning Management System for Inspired Minds Home Tuition Agency. Manages teachers, students, pairings, lessons, resources, real-time chat and AI learning tools (student tutor chatbot, teacher question generator and notes summariser).
 
 ## Architecture
 - **Monorepo** with two sub-projects:
@@ -10,13 +10,13 @@ Learning Management System for Inspired Minds Home Tuition Agency. Manages teach
 - **Database**: PostgreSQL
 - **Real-time**: Django Channels + Redis (WebSocket chat)
 - **File storage**: Local filesystem (Django media/)
-- **AI**: not built yet (Phase 5). No AI app, pages or SDKs exist; add them when the phase is scheduled
+- **AI**: `ai_services` app behind a provider-neutral `BaseChatProvider` (`ai_services/providers/`); the only adapter is Anthropic (`anthropic` SDK pinned to 1.x, model `claude-sonnet-5-5`). Tutor replies stream as NDJSON over HTTP
 - **Auth**: JWT via djangorestframework-simplejwt
 
 ## User Roles
 - **Admin** — Agency staff. Manages teachers, students, pairings and the shared library. Full platform oversight.
-- **Teacher** — Creates lessons, uploads resources, chats with students.
-- **Student** — Views scheduled lessons and resources, accesses general library, chats with teacher.
+- **Teacher** — Creates lessons, uploads resources, chats with students, uses AI tools, reads their students' AI tutor chats.
+- **Student** — Views scheduled lessons and resources, accesses general library, chats with teacher, uses the AI tutor.
 
 ## Backend Conventions (`backend/`)
 
@@ -37,6 +37,7 @@ Learning Management System for Inspired Minds Home Tuition Agency. Manages teach
 | `enquiries` | Public website submissions (contact enquiries, tutor applications); reviewed in Django admin |
 | `subjects` | Curated Subject list used by pairings, resources and profiles |
 | `chat` | Real-time WebSocket chat (Django Channels) |
+| `ai_services` | AI tutor chats + safeguarding flags, teacher tools (questions, summaries), usage records + daily caps |
 
 ### Key Patterns
 - Email-based authentication (USERNAME_FIELD = "email")
@@ -49,6 +50,7 @@ Learning Management System for Inspired Minds Home Tuition Agency. Manages teach
 - Lesson status changes are limited by `LESSON_STATUS_TRANSITIONS` (completed is final); chat on an ended pairing is read-only
 - Students never see draft lessons (`Lesson.objects.for_user`); a teacher publishes a lesson by scheduling it
 - Admin-set passwords go through Django's `AUTH_PASSWORD_VALIDATORS`, like user-chosen ones
+- AI: views call `get_provider()`, never an SDK directly. Every model call writes an `AIUsage` row; daily caps (`quotas.py`) count those rows. Tutor chats are visible to the student, their actively/paused-paired teachers and admins (`TutorConversation.objects.visible_to`); the tutor flags safety concerns via a tool call, and flags are hidden from students. Files reach the model only if the user can see the resource and it is PDF, image or .txt. Tests use `ai_services/tests/fakes.FakeProvider` — no test calls the real API
 
 ### Running Backend
 ```bash
@@ -56,7 +58,7 @@ cd backend
 python manage.py runserver          # Dev server on :8000
 python manage.py migrate            # Run migrations
 python manage.py createsuperuser    # Create admin user
-daphne -b 0.0.0.0 -p 8000 setup.asgi:application  # ASGI server (for WebSocket)
+daphne -b 0.0.0.0 -p 8000 setup.asgi:application  # ASGI server (for WebSocket and streamed AI tutor replies; runserver buffers the stream)
 ```
 
 ## Frontend Conventions (`frontend/`)
@@ -123,6 +125,11 @@ NUM_PROXIES=1  # proxies in front of Django, so rate limits see real client IPs
 USE_REDIS_CACHE=True  # share rate-limit counts across workers
 SECURE_SSL_REDIRECT=True SECURE_HSTS_SECONDS=2592000  # defaults; set False/0 only for plain-HTTP local runs
 EXPOSE_API_DOCS=False  # /swagger/ and /redoc/ default to on only when DEBUG
+# AI (pages show "not configured" until the key is set)
+ANTHROPIC_API_KEY=
+AI_PROVIDER=anthropic AI_MODEL=claude-sonnet-5-5  # defaults
+AI_DAILY_TUTOR_MESSAGES=50 AI_DAILY_TEACHER_TOOL_RUNS=30  # per user per day
+AI_MAX_ATTACHMENT_MB=20  # largest shared file sent to the model
 ```
 
 ### Frontend (.env.local)
@@ -141,7 +148,7 @@ NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1  # contact + tutor application 
 2. User Management + Pairings
 3. Lesson Planning + Resources
 4. Real-time Chat
-5. AI Integration (not started; placeholder pages and SDKs were removed until it is scheduled)
+5. AI Integration
 6. Polish + Deployment
 
 ## Git Workflow

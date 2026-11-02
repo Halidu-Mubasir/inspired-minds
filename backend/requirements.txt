@@ -11,3 +11,4 @@ Pillow==13.0.0
 drf-yasg==1.21.18
 python-decouple==3.8
 whitenoise==6.12.0
+anthropic==1.17.0

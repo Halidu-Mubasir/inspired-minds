@@ -32,6 +32,13 @@ export const queryKeys = {
     list: (params: Params) => ["lessons", "list", params] as const,
     detail: (id: string) => ["lessons", "detail", id] as const,
   },
+  ai: {
+    all: ["ai"] as const,
+    usage: ["ai", "usage"] as const,
+    conversations: (params: Params) => ["ai", "conversations", params] as const,
+    conversation: (id: string) => ["ai", "conversation", id] as const,
+    generations: (params: Params) => ["ai", "generations", params] as const,
+  },
   resources: {
     all: ["resources"] as const,
     list: (params: Params) => ["resources", "list", params] as const,

@@ -52,6 +52,7 @@ services:
       FRONTEND_URL: http://localhost:3000
       EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.console.EmailBackend}
       DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-Inspired Minds <no-reply@localhost>}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       # Plain HTTP on localhost only — see the note at the top.
       SECURE_SSL_REDIRECT: "False"
       SESSION_COOKIE_SECURE: "False"

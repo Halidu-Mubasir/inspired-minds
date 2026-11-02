@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Users, UserCheck, Link2, BookOpen, FileText,
-  MessageSquare, Library, LogOut, Settings, GraduationCap,
+  MessageSquare, Library, LogOut, Settings, GraduationCap, Bot, Sparkles, ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     { label: "Students", href: "/admin/students", icon: Users },
     { label: "Pairings", href: "/admin/pairings", icon: Link2 },
     { label: "Library", href: "/admin/library", icon: Library },
+    { label: "Tutor Chats", href: "/admin/tutor-chats", icon: ShieldCheck },
   ],
   teacher: [
     { label: "Dashboard", href: "/teacher", icon: LayoutDashboard },
@@ -31,6 +32,8 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     { label: "Lessons", href: "/teacher/lessons", icon: BookOpen },
     { label: "Resources", href: "/teacher/resources", icon: FileText },
     { label: "Chat", href: "/teacher/chat", icon: MessageSquare },
+    { label: "AI Tools", href: "/teacher/ai-tools", icon: Sparkles },
+    { label: "Tutor Chats", href: "/teacher/tutor-chats", icon: ShieldCheck },
   ],
   student: [
     { label: "Dashboard", href: "/student", icon: LayoutDashboard },
@@ -38,6 +41,7 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     { label: "Resources", href: "/student/resources", icon: FileText },
     { label: "Library", href: "/student/library", icon: Library },
     { label: "Chat", href: "/student/chat", icon: MessageSquare },
+    { label: "AI Tutor", href: "/student/tutor", icon: Bot },
   ],
 };
 
