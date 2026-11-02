@@ -13,8 +13,8 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
-# Collect admin/API-docs static files for whitenoise. The key only satisfies settings at build time.
-RUN SECRET_KEY=build-only-not-used-at-runtime python manage.py collectstatic --noinput
+# Collect admin/API-docs static files for whitenoise. A random key only satisfies settings at build time.
+RUN SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(50))')" python manage.py collectstatic --noinput
 
 RUN useradd --create-home --uid 10001 app \
     && mkdir -p /app/media /app/private_media \

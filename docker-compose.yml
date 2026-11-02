@@ -1,4 +1,4 @@
-# Full stack on one machine: `cp .env.example .env`, set SECRET_KEY, then `docker compose up --build`.
+# Full stack on one machine: `cp .env.example .env`, set SECRET_KEY and DB_PASSWORD, then `docker compose up --build`.
 #   LMS:      http://localhost:3000
 #   Website:  http://localhost:3001
 #   API:      http://localhost:8000 (admin at /admin/)
@@ -11,7 +11,7 @@ services:
     environment:
       POSTGRES_DB: inspired_minds
       POSTGRES_USER: inspired_minds
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-inspired_minds}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env (see .env.example)}
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -42,7 +42,7 @@ services:
       USE_POSTGRES: "True"
       DB_NAME: inspired_minds
       DB_USER: inspired_minds
-      DB_PASSWORD: ${DB_PASSWORD:-inspired_minds}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env (see .env.example)}
       DB_HOST: db
       DB_PORT: "5432"
       REDIS_URL: redis://redis:6379/0

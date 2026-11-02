@@ -26,21 +26,22 @@ jobs:
         env:
           POSTGRES_DB: inspired_minds
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
+          # CI-only throwaway database: no password to commit.
+          POSTGRES_HOST_AUTH_METHOD: trust
         ports: ["5432:5432"]
         options: >-
           --health-cmd "pg_isready -U postgres"
           --health-interval 5s --health-timeout 5s --health-retries 10
     env:
-      SECRET_KEY: ci-only-secret-key-that-is-long-enough-for-hs256-signing
       USE_POSTGRES: "True"
       DB_NAME: inspired_minds
       DB_USER: postgres
-      DB_PASSWORD: postgres
       DB_HOST: localhost
       DB_PORT: "5432"
     steps:
       - uses: actions/checkout@v4
+      - name: Generate a throwaway SECRET_KEY for this run
+        run: echo "SECRET_KEY=$(python3 -c 'import secrets; print(secrets.token_urlsafe(50))')" >> "$GITHUB_ENV"
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
@@ -54,7 +55,6 @@ jobs:
       - name: Production settings pass Django's deploy checks
         env:
           DEBUG: "False"
-          SECRET_KEY: ${{ github.run_id }}-ci-deploy-check-key-not-a-real-secret-0123456789
           ALLOWED_HOSTS: api.example.com
           CSRF_TRUSTED_ORIGINS: https://api.example.com
         run: python manage.py check --deploy --fail-level WARNING
@@ -100,6 +100,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Generate throwaway SECRET_KEY and DB_PASSWORD for compose validation
+        run: |
+          echo "SECRET_KEY=$(python3 -c 'import secrets; print(secrets.token_urlsafe(50))')" >> "$GITHUB_ENV"
+          echo "DB_PASSWORD=$(python3 -c 'import secrets; print(secrets.token_urlsafe(24))')" >> "$GITHUB_ENV"
       - run: docker compose build
-        env:
-          SECRET_KEY: ci-only-compose-validation-key

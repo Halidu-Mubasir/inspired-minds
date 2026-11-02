@@ -159,10 +159,11 @@ NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1  # contact + tutor application 
 ## Testing
 - Backend: `python manage.py test`
 - Frontend: Component tests with testing-library (to be set up)
+- No credentials are committed: CI generates throwaway keys per run and uses a passwordless (trust) Postgres service; compose requires `SECRET_KEY` and `DB_PASSWORD` from `.env`
 - CI (`.github/workflows/ci.yml`): backend tests on PostgreSQL (Python 3.13 and 3.14), migration drift check, `check --deploy --fail-level WARNING`; lint, type-check and build for `frontend/` and `website/`; `docker compose build`
 
 ## Deployment
-- `docker compose up --build` runs Postgres, Redis, the API (Daphne, port 8000), the LMS (3000) and the website (3001); copy `.env.example` to `.env` and set `SECRET_KEY` first
+- `docker compose up --build` runs Postgres, Redis, the API (Daphne, port 8000), the LMS (3000) and the website (3001); copy `.env.example` to `.env` and set `SECRET_KEY` and `DB_PASSWORD` first
 - `NEXT_PUBLIC_*` URLs are baked in at image build time (compose build args), not read at runtime
 - The API serves its own static files (whitenoise). `/media/` (avatars) must be served by a web server or object storage in production; `private_media/` must never be served
 - `/healthz/` is the liveness endpoint (no auth, exempt from the HTTPS redirect)
