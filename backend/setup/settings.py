@@ -189,11 +189,6 @@ SWAGGER_SETTINGS = {
     "USE_SESSION_AUTH": False,
 }
 
-# AI
-AI_PROVIDER = config("AI_PROVIDER", default="anthropic")
-AI_MODEL = config("AI_MODEL", default="claude-sonnet-4-20250514")
-ANTHROPIC_API_KEY = config("ANTHROPIC_API_KEY", default="")
-OPENAI_API_KEY = config("OPENAI_API_KEY", default="")
 
 LOGGING = {
     "version": 1,

@@ -1,6 +1,5 @@
 from .auth import (
     LoginSerializer,
-    RefreshSerializer,
     LogoutSerializer,
     ChangePasswordSerializer,
     PasswordResetRequestSerializer,
@@ -12,11 +11,12 @@ from .profile import (
     StudentProfileSerializer,
     CreateTeacherSerializer,
     CreateStudentSerializer,
+    UpdateTeacherSerializer,
+    UpdateStudentSerializer,
 )
 
 __all__ = [
     "LoginSerializer",
-    "RefreshSerializer",
     "LogoutSerializer",
     "ChangePasswordSerializer",
     "PasswordResetRequestSerializer",
@@ -26,4 +26,6 @@ __all__ = [
     "StudentProfileSerializer",
     "CreateTeacherSerializer",
     "CreateStudentSerializer",
+    "UpdateTeacherSerializer",
+    "UpdateStudentSerializer",
 ]

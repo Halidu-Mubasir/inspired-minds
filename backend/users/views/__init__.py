@@ -1,6 +1,5 @@
 from .auth import (
     LoginView,
-    RefreshView,
     LogoutView,
     ChangePasswordView,
     PasswordResetRequestView,
@@ -14,13 +13,13 @@ from .user import (
     StudentListCreateView,
     StudentDetailView,
     DashboardStatsView,
+    MySummaryView,
     UpdateTeacherProfileView,
     UpdateStudentProfileView,
 )
 
 __all__ = [
     "LoginView",
-    "RefreshView",
     "LogoutView",
     "ChangePasswordView",
     "PasswordResetRequestView",
@@ -32,6 +31,7 @@ __all__ = [
     "StudentListCreateView",
     "StudentDetailView",
     "DashboardStatsView",
+    "MySummaryView",
     "UpdateTeacherProfileView",
     "UpdateStudentProfileView",
 ]

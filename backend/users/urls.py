@@ -1,7 +1,7 @@
 from django.urls import path
+from rest_framework_simplejwt.views import TokenRefreshView
 from users.views import (
     LoginView,
-    RefreshView,
     LogoutView,
     ChangePasswordView,
     PasswordResetRequestView,
@@ -13,6 +13,7 @@ from users.views import (
     StudentListCreateView,
     StudentDetailView,
     DashboardStatsView,
+    MySummaryView,
     UpdateTeacherProfileView,
     UpdateStudentProfileView,
 )
@@ -21,13 +22,15 @@ urlpatterns = [
     # Auth
     path("login/", LoginView.as_view(), name="login"),
     path("logout/", LogoutView.as_view(), name="logout"),
-    path("token/refresh/", RefreshView.as_view(), name="token-refresh"),
+    # simplejwt >= 5.5 refuses inactive users and records rotated tokens itself.
+    path("token/refresh/", TokenRefreshView.as_view(), name="token-refresh"),
     path("change-password/", ChangePasswordView.as_view(), name="change-password"),
     path("password-reset/", PasswordResetRequestView.as_view(), name="password-reset"),
     path("password-reset/confirm/", PasswordResetConfirmView.as_view(), name="password-reset-confirm"),
     # Current user
     path("me/", MeView.as_view(), name="me"),
     path("me/avatar/", ChangeAvatarView.as_view(), name="change-avatar"),
+    path("me/summary/", MySummaryView.as_view(), name="my-summary"),
     path("me/teacher-profile/", UpdateTeacherProfileView.as_view(), name="teacher-profile"),
     path("me/student-profile/", UpdateStudentProfileView.as_view(), name="student-profile"),
     # Admin: Teachers

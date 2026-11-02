@@ -10,13 +10,13 @@ Learning Management System for Inspired Minds Home Tuition Agency. Manages teach
 - **Database**: PostgreSQL
 - **Real-time**: Django Channels + Redis (WebSocket chat)
 - **File storage**: Local filesystem (Django media/)
-- **AI**: Abstract provider pattern (pluggable Claude/OpenAI/etc.)
+- **AI**: not built yet (Phase 5). No AI app, pages or SDKs exist; add them when the phase is scheduled
 - **Auth**: JWT via djangorestframework-simplejwt
 
 ## User Roles
-- **Admin** — Agency staff. Manages teachers, students, pairings. Full platform oversight.
-- **Teacher** — Creates lessons, uploads resources, chats with students, uses AI tools.
-- **Student** — Views lessons/resources, accesses general library, chats with teacher, uses AI chatbot.
+- **Admin** — Agency staff. Manages teachers, students, pairings and the shared library. Full platform oversight.
+- **Teacher** — Creates lessons, uploads resources, chats with students.
+- **Student** — Views scheduled lessons and resources, accesses general library, chats with teacher.
 
 ## Backend Conventions (`backend/`)
 
@@ -37,7 +37,6 @@ Learning Management System for Inspired Minds Home Tuition Agency. Manages teach
 | `enquiries` | Public website submissions (contact enquiries, tutor applications); reviewed in Django admin |
 | `subjects` | Curated Subject list used by pairings, resources and profiles |
 | `chat` | Real-time WebSocket chat (Django Channels) |
-| `ai_services` | AI chatbot + tools (abstract provider pattern) |
 
 ### Key Patterns
 - Email-based authentication (USERNAME_FIELD = "email")
@@ -48,7 +47,8 @@ Learning Management System for Inspired Minds Home Tuition Agency. Manages teach
 - History is never deleted: users are deactivated (`users.services.deactivate_user`, which also pauses their pairings), pairings are ended, subjects are retired (`is_active=False`); FKs onto users/pairings/subjects use `PROTECT`
 - Subjects are exchanged over the API by name (`SubjectNameField`), validated against active `Subject` rows
 - Lesson status changes are limited by `LESSON_STATUS_TRANSITIONS` (completed is final); chat on an ended pairing is read-only
-- AI providers: abstract `BaseChatProvider` ABC with concrete adapters
+- Students never see draft lessons (`Lesson.objects.for_user`); a teacher publishes a lesson by scheduling it
+- Admin-set passwords go through Django's `AUTH_PASSWORD_VALIDATORS`, like user-chosen ones
 
 ### Running Backend
 ```bash
@@ -104,7 +104,8 @@ npm run lint    # ESLint
 ```
 SECRET_KEY=your-secret-key
 DEBUG=True
-DATABASE_URL=postgres://user:pass@localhost:5432/inspired_minds
+USE_POSTGRES=True  # SQLite (backend/db.sqlite3) when False
+DB_NAME=inspired_minds DB_USER=postgres DB_PASSWORD=postgres DB_HOST=localhost DB_PORT=5432
 ALLOWED_HOSTS=localhost,127.0.0.1
 CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001  # LMS frontend + marketing website
 REDIS_URL=redis://localhost:6379/0
@@ -116,10 +117,6 @@ FRONTEND_URL=http://localhost:3000  # LMS frontend, used in password reset links
 EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend  # smtp.EmailBackend in production
 EMAIL_HOST= EMAIL_PORT=587 EMAIL_HOST_USER= EMAIL_HOST_PASSWORD= EMAIL_USE_TLS=True
 DEFAULT_FROM_EMAIL=Inspired Minds <no-reply@your-domain>  # sender for password reset emails
-AI_PROVIDER=anthropic
-AI_MODEL=claude-sonnet-4-20250514
-ANTHROPIC_API_KEY=
-OPENAI_API_KEY=
 ```
 
 ### Frontend (.env.local)
@@ -138,7 +135,7 @@ NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1  # contact + tutor application 
 2. User Management + Pairings
 3. Lesson Planning + Resources
 4. Real-time Chat
-5. AI Integration
+5. AI Integration (not started; placeholder pages and SDKs were removed until it is scheduled)
 6. Polish + Deployment
 
 ## Git Workflow

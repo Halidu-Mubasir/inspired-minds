@@ -1,4 +1,7 @@
+from datetime import timedelta
+
 from django.db import models
+from django.utils import timezone
 from setup.base_model import BaseModel
 from users.models import UserRole
 
@@ -21,14 +24,27 @@ LESSON_STATUS_TRANSITIONS = {
 
 class LessonQuerySet(models.QuerySet):
     def for_user(self, user):
-        """Lessons on pairings the user takes part in (admins see all)."""
+        """Lessons on pairings the user takes part in (admins see all).
+
+        Drafts are the teacher's working copies: students only see a lesson once it
+        is scheduled (or later completed/cancelled).
+        """
         if user.role == UserRole.ADMIN:
             return self.all()
         if user.role == UserRole.TEACHER:
             return self.filter(pairing__teacher=user)
         if user.role == UserRole.STUDENT:
-            return self.filter(pairing__student=user)
+            return self.filter(pairing__student=user).exclude(status=LessonStatus.DRAFT)
         return self.none()
+
+    def upcoming(self, days=7):
+        """Scheduled lessons from today through the next `days` days."""
+        today = timezone.localdate()
+        return self.filter(
+            status=LessonStatus.SCHEDULED,
+            scheduled_date__gte=today,
+            scheduled_date__lt=today + timedelta(days=days),
+        )
 
 
 class Lesson(BaseModel):

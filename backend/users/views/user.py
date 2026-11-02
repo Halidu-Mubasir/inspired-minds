@@ -5,10 +5,12 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from lessons.models import Lesson
 from users.models import CustomUser, TeacherProfile, StudentProfile, EducationLevel, UserRole
 from users.serializers import (
     UserSerializer,
     CreateTeacherSerializer, CreateStudentSerializer,
+    UpdateTeacherSerializer, UpdateStudentSerializer,
     TeacherProfileSerializer, StudentProfileSerializer,
 )
 from users.permissions import IsAdmin
@@ -89,14 +91,38 @@ class TeacherListCreateView(ListCreateAPIView):
         return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
 
 
-class TeacherDetailView(RetrieveUpdateDestroyAPIView):
+class AdminUserDetailView(RetrieveUpdateDestroyAPIView):
+    """Admin: view, edit (PATCH, including is_active) or deactivate (DELETE) one account.
+    Responses always use UserSerializer so the client gets the full, current profile."""
     permission_classes = [IsAdmin]
-    serializer_class = UserSerializer
-    queryset = CustomUser.objects.filter(role="teacher").select_related("teacher_profile")
+    role: str
+    update_serializer_class: type
+
+    def get_queryset(self):
+        return CustomUser.objects.filter(role=self.role).select_related(f"{self.role}_profile")
+
+    def get_serializer_class(self):
+        if self.request.method in ("PUT", "PATCH"):
+            return self.update_serializer_class
+        return UserSerializer
+
+    def update(self, request, *args, **kwargs):
+        serializer = self.get_serializer(self.get_object(), data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(UserSerializer(self.get_object()).data)
 
     def destroy(self, request, *args, **kwargs):
         paused = deactivate_user(self.get_object())
-        return Response({"message": "Teacher deactivated.", "pairings_paused": paused}, status=status.HTTP_200_OK)
+        return Response(
+            {"message": f"{self.role.title()} deactivated.", "pairings_paused": paused},
+            status=status.HTTP_200_OK,
+        )
+
+
+class TeacherDetailView(AdminUserDetailView):
+    role = UserRole.TEACHER
+    update_serializer_class = UpdateTeacherSerializer
 
 
 # --- Admin: Student Management ---
@@ -126,14 +152,9 @@ class StudentListCreateView(ListCreateAPIView):
         return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
 
 
-class StudentDetailView(RetrieveUpdateDestroyAPIView):
-    permission_classes = [IsAdmin]
-    serializer_class = UserSerializer
-    queryset = CustomUser.objects.filter(role="student").select_related("student_profile")
-
-    def destroy(self, request, *args, **kwargs):
-        paused = deactivate_user(self.get_object())
-        return Response({"message": "Student deactivated.", "pairings_paused": paused}, status=status.HTTP_200_OK)
+class StudentDetailView(AdminUserDetailView):
+    role = UserRole.STUDENT
+    update_serializer_class = UpdateStudentSerializer
 
 
 # --- Admin: Dashboard Stats ---
@@ -152,8 +173,39 @@ class DashboardStatsView(APIView):
             "total_students": students.filter(is_active=True).count(),
             "inactive_students": students.filter(is_active=False).count(),
             "active_pairings": TeacherStudentPairing.objects.filter(status=PairingStatus.ACTIVE).count(),
+            "lessons_this_week": Lesson.objects.upcoming().count(),
         }
         return Response(stats)
+
+
+class MySummaryView(APIView):
+    """Teacher/student dashboard counts for the signed-in user."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from django.db.models import Q
+        from chat.models import Message
+        from pairings.models import PairingStatus, TeacherStudentPairing
+        from resources.models import Resource, ResourceVisibility
+
+        user = request.user
+        unread = Message.objects.filter(
+            Q(conversation__pairing__teacher=user) | Q(conversation__pairing__student=user),
+            is_read=False,
+        ).exclude(sender=user)
+        summary = {
+            "active_pairings": TeacherStudentPairing.objects.for_user(user).filter(status=PairingStatus.ACTIVE).count(),
+            "upcoming_lessons": Lesson.objects.for_user(user).upcoming().count(),
+            "unread_messages": unread.count(),
+        }
+        if user.role == UserRole.TEACHER:
+            summary["shared_files"] = Resource.objects.filter(uploaded_by=user).count()
+        else:
+            # Files from the student's teachers; the shared library is counted separately.
+            summary["shared_files"] = Resource.objects.visible_to(user).filter(
+                visibility=ResourceVisibility.PRIVATE
+            ).count()
+        return Response(summary)
 
 
 # --- Profile Update Views ---

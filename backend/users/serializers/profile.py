@@ -1,3 +1,5 @@
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from rest_framework import serializers
 from subjects.serializers import SubjectNameField
@@ -46,6 +48,83 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "email", "role", "is_active", "created_at", "updated_at"]
 
 
+class AdminUserUpdateSerializer(serializers.ModelSerializer):
+    """Admin edits an account and its role profile in one request.
+
+    is_active=false runs the full deactivation (sessions ended, pairings paused);
+    is_active=true reactivates the account but leaves pairings for the admin to resume.
+    """
+    profile_field: str
+    profile_model: type
+    m2m_fields: set[str] = set()
+
+    class Meta:
+        model = CustomUser
+        fields = ["email", "first_name", "last_name", "phone_number", "address", "is_active"]
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        from users.services import deactivate_user
+
+        profile_data = validated_data.pop(self.profile_field, None)
+        is_active = validated_data.pop("is_active", None)
+        instance = super().update(instance, validated_data)
+
+        if profile_data is not None:
+            profile, _ = self.profile_model.objects.get_or_create(user=instance)
+            relations = {name: profile_data.pop(name) for name in list(profile_data) if name in self.m2m_fields}
+            for attr, value in profile_data.items():
+                setattr(profile, attr, value)
+            profile.save()
+            for attr, value in relations.items():
+                getattr(profile, attr).set(value)
+
+        if is_active is False and instance.is_active:
+            deactivate_user(instance)
+        elif is_active is True and not instance.is_active:
+            instance.is_active = True
+            instance.save(update_fields=["is_active", "updated_at"])
+        return instance
+
+
+class UpdateTeacherSerializer(AdminUserUpdateSerializer):
+    teacher_profile = TeacherProfileSerializer(required=False)
+    profile_field = "teacher_profile"
+    profile_model = TeacherProfile
+    m2m_fields = {"subjects"}
+
+    class Meta(AdminUserUpdateSerializer.Meta):
+        fields = AdminUserUpdateSerializer.Meta.fields + ["teacher_profile"]
+
+
+class UpdateStudentSerializer(AdminUserUpdateSerializer):
+    student_profile = StudentProfileSerializer(required=False)
+    profile_field = "student_profile"
+    profile_model = StudentProfile
+    m2m_fields = {"subjects_of_interest"}
+
+    class Meta(AdminUserUpdateSerializer.Meta):
+        fields = AdminUserUpdateSerializer.Meta.fields + ["student_profile"]
+
+
+class PasswordRulesMixin:
+    """Runs Django's AUTH_PASSWORD_VALIDATORS on admin-set passwords, including
+    the check that the password isn't too similar to the user's name or email."""
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        candidate = CustomUser(
+            email=attrs.get("email", ""),
+            first_name=attrs.get("first_name", ""),
+            last_name=attrs.get("last_name", ""),
+        )
+        try:
+            validate_password(attrs["password"], candidate)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError({"password": list(e.messages)})
+        return attrs
+
+
 def _create_user(role, validated_data):
     password = validated_data.pop("password")
     user = CustomUser(role=role, **validated_data)
@@ -54,7 +133,7 @@ def _create_user(role, validated_data):
     return user
 
 
-class CreateTeacherSerializer(serializers.ModelSerializer):
+class CreateTeacherSerializer(PasswordRulesMixin, serializers.ModelSerializer):
     """Admin creates a teacher with profile fields."""
     password = serializers.CharField(write_only=True, min_length=8)
     subjects = SubjectNameField(many=True, required=False)
@@ -85,7 +164,7 @@ class CreateTeacherSerializer(serializers.ModelSerializer):
         return user
 
 
-class CreateStudentSerializer(serializers.ModelSerializer):
+class CreateStudentSerializer(PasswordRulesMixin, serializers.ModelSerializer):
     """Admin creates a student with profile fields."""
     password = serializers.CharField(write_only=True, min_length=8)
     education_level = serializers.ChoiceField(choices=EducationLevel.choices, required=False, allow_blank=True)

@@ -18,7 +18,10 @@ class LessonAccessTests(TestCase):
         cls.student_b = make_user("student", "student_b")
         cls.pairing_a = make_pairing(cls.teacher_a, cls.student_a)
         cls.pairing_b = make_pairing(cls.teacher_b, cls.student_b)
-        cls.lesson_a = Lesson.objects.create(pairing=cls.pairing_a, title="Algebra", scheduled_date=date.today())
+        # Scheduled, so the student can see it (drafts are hidden from students).
+        cls.lesson_a = Lesson.objects.create(
+            pairing=cls.pairing_a, title="Algebra", scheduled_date=date.today(), status="scheduled"
+        )
         cls.topic_a = LessonTopic.objects.create(lesson=cls.lesson_a, title="Linear equations")
 
     def create_lesson(self, user, pairing):

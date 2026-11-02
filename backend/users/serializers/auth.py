@@ -4,12 +4,6 @@ from django.contrib.auth.tokens import default_token_generator
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.http import urlsafe_base64_decode
 from rest_framework import serializers
-from rest_framework.exceptions import AuthenticationFailed
-from rest_framework_simplejwt.serializers import TokenRefreshSerializer
-from rest_framework_simplejwt.settings import api_settings as jwt_settings
-from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.utils import datetime_from_epoch
 from users.models import CustomUser
 
 
@@ -33,28 +27,6 @@ class LoginSerializer(serializers.Serializer):
         if not user.is_active:
             raise serializers.ValidationError("This account has been deactivated.")
         data["user"] = user
-        return data
-
-
-class RefreshSerializer(TokenRefreshSerializer):
-    """Token refresh that refuses deactivated users and records rotated tokens as
-    outstanding, so revoke_refresh_tokens() can reach them later."""
-
-    def validate(self, attrs):
-        user_id = RefreshToken(attrs["refresh"]).payload.get(jwt_settings.USER_ID_CLAIM)
-        if not CustomUser.objects.filter(id=user_id, is_active=True).exists():
-            raise AuthenticationFailed("User is inactive or no longer exists.", code="user_inactive")
-
-        data = super().validate(attrs)
-        if "refresh" in data:
-            rotated = RefreshToken(data["refresh"])
-            OutstandingToken.objects.create(
-                user_id=user_id,
-                jti=rotated[jwt_settings.JTI_CLAIM],
-                token=str(rotated),
-                created_at=rotated.current_time,
-                expires_at=datetime_from_epoch(rotated["exp"]),
-            )
         return data
 
 

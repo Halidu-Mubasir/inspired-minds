@@ -5,12 +5,10 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.views import TokenRefreshView
 from users.emails import send_password_reset_email
 from users.models import CustomUser
 from users.serializers import (
     LoginSerializer,
-    RefreshSerializer,
     LogoutSerializer,
     ChangePasswordSerializer,
     PasswordResetRequestSerializer,
@@ -41,10 +39,6 @@ class LoginView(PublicAuthView):
             {"message": "Login successful.", "tokens": tokens, "user": user_data},
             status=status.HTTP_200_OK,
         )
-
-
-class RefreshView(TokenRefreshView):
-    serializer_class = RefreshSerializer
 
 
 class LogoutView(PublicAuthView):
