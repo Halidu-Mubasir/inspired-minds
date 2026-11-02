@@ -37,7 +37,8 @@ export function useAuth() {
 
   const logout = useCallback(async () => {
     try {
-      await authApi.logout();
+      const { refreshToken } = getAuthTokens();
+      if (refreshToken) await authApi.logout(refreshToken);
     } catch {
       // ignore errors on logout
     } finally {

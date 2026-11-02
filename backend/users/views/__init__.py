@@ -1,4 +1,11 @@
-from .auth import LoginView, LogoutView, ChangePasswordView
+from .auth import (
+    LoginView,
+    RefreshView,
+    LogoutView,
+    ChangePasswordView,
+    PasswordResetRequestView,
+    PasswordResetConfirmView,
+)
 from .user import (
     MeView,
     ChangeAvatarView,
@@ -13,8 +20,11 @@ from .user import (
 
 __all__ = [
     "LoginView",
+    "RefreshView",
     "LogoutView",
     "ChangePasswordView",
+    "PasswordResetRequestView",
+    "PasswordResetConfirmView",
     "MeView",
     "ChangeAvatarView",
     "TeacherListCreateView",

@@ -18,6 +18,7 @@ INSTALLED_APPS = [
     # Third-party
     "rest_framework",
     "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "django_filters",
     "drf_yasg",
@@ -136,21 +137,38 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         # Public website forms, per client IP.
         "enquiries": config("ENQUIRY_THROTTLE_RATE", default="10/hour"),
+        "login": config("LOGIN_THROTTLE_RATE", default="10/minute"),
+        "password_reset": config("PASSWORD_RESET_THROTTLE_RATE", default="5/hour"),
     },
 }
 
-# JWT
+# JWT — short-lived access tokens; the client refreshes them silently.
+# Refresh tokens rotate on use and are blacklisted on rotation, logout and password change.
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=60),
     "ROTATE_REFRESH_TOKENS": True,
-    "BLACKLIST_AFTER_ROTATION": False,
+    "BLACKLIST_AFTER_ROTATION": True,
     "UPDATE_LAST_LOGIN": True,
     "ALGORITHM": "HS256",
     "AUTH_HEADER_TYPES": ("Bearer",),
     "USER_ID_FIELD": "id",
     "USER_ID_CLAIM": "user_id",
 }
+
+# Email — console backend prints messages in dev; set EMAIL_BACKEND to
+# django.core.mail.backends.smtp.EmailBackend (with the EMAIL_* settings) in production.
+EMAIL_BACKEND = config("EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")
+EMAIL_HOST = config("EMAIL_HOST", default="localhost")
+EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
+EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
+DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="Inspired Minds <no-reply@inspiredminds.local>")
+
+# Password reset links point at the LMS frontend and expire after two hours.
+FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:3000")
+PASSWORD_RESET_TIMEOUT = 2 * 60 * 60
 
 # CORS
 CORS_ALLOWED_ORIGINS = config(

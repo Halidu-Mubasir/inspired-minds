@@ -3,18 +3,20 @@ from channels.middleware import BaseMiddleware
 from channels.db import database_sync_to_async
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
+from django.core.exceptions import ValidationError
 
 
 @database_sync_to_async
 def _get_user_from_token(token_str):
     if not token_str:
         return AnonymousUser()
+    from rest_framework_simplejwt.exceptions import TokenError
+    from rest_framework_simplejwt.tokens import AccessToken
+    User = get_user_model()
     try:
-        from rest_framework_simplejwt.tokens import AccessToken
         token = AccessToken(token_str)
-        User = get_user_model()
-        return User.objects.get(id=token["user_id"])
-    except Exception:
+        return User.objects.get(id=token["user_id"], is_active=True)
+    except (TokenError, KeyError, ValidationError, User.DoesNotExist):
         return AnonymousUser()
 
 

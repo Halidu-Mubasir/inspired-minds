@@ -11,6 +11,7 @@ from users.serializers import (
     TeacherProfileSerializer, StudentProfileSerializer,
 )
 from users.permissions import IsAdmin
+from users.tokens import revoke_refresh_tokens
 
 
 class MeView(RetrieveUpdateAPIView):
@@ -66,6 +67,7 @@ class TeacherDetailView(RetrieveUpdateDestroyAPIView):
         user = self.get_object()
         user.is_active = False
         user.save()
+        revoke_refresh_tokens(user)
         return Response({"message": "Teacher deactivated."}, status=status.HTTP_200_OK)
 
 
@@ -98,6 +100,7 @@ class StudentDetailView(RetrieveUpdateDestroyAPIView):
         user = self.get_object()
         user.is_active = False
         user.save()
+        revoke_refresh_tokens(user)
         return Response({"message": "Student deactivated."}, status=status.HTTP_200_OK)
 
 

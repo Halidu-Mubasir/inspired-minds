@@ -1,24 +1,29 @@
 "use client";
-import { TOKEN_KEYS } from "@/lib/constants";
-import type { UserData } from "@/lib/token-utils";
+import { AUTH_COOKIES, TOKEN_KEYS } from "@/lib/constants";
+import type { UserRole } from "@/lib/constants";
+
+// Cookies written by earlier versions, which stored the access token itself.
+const LEGACY_COOKIES = [TOKEN_KEYS.ACCESS, `${TOKEN_KEYS.ACCESS}_exp`];
+
+function expireCookies(names: readonly string[]): void {
+  for (const name of names) document.cookie = `${name}=; path=/; max-age=0`;
+}
 
 /**
- * Sets auth cookies so the Next.js middleware can verify auth on the server.
- * Called after a successful login in addition to localStorage storage.
+ * Sets the cookies the Next.js middleware uses for route gating. They live as long as
+ * the refresh token, so an expired access token alone never bounces the user to /login.
+ * These are a UX guard only; the API enforces access.
  */
-export function setAuthCookies(accessToken: string, user: UserData, expiresAt: number): void {
+export function setSessionCookies(role: UserRole, sessionExpiresAt: number): void {
   if (typeof document === "undefined") return;
-  const maxAge = Math.floor((expiresAt - Date.now()) / 1000);
+  const maxAge = Math.max(0, Math.floor((sessionExpiresAt - Date.now()) / 1000));
   const cookieOptions = `; path=/; max-age=${maxAge}; SameSite=Lax`;
-  document.cookie = `${TOKEN_KEYS.ACCESS}=${accessToken}${cookieOptions}`;
-  document.cookie = `${TOKEN_KEYS.ACCESS}_exp=${expiresAt}${cookieOptions}`;
-  document.cookie = `inspired_minds_role=${user.role}${cookieOptions}`;
+  document.cookie = `${AUTH_COOKIES.SESSION}=${sessionExpiresAt}${cookieOptions}`;
+  document.cookie = `${AUTH_COOKIES.ROLE}=${role}${cookieOptions}`;
+  expireCookies(LEGACY_COOKIES);
 }
 
 export function clearAuthCookies(): void {
   if (typeof document === "undefined") return;
-  const expired = "; path=/; max-age=0";
-  document.cookie = `${TOKEN_KEYS.ACCESS}=${expired}`;
-  document.cookie = `${TOKEN_KEYS.ACCESS}_exp=${expired}`;
-  document.cookie = `inspired_minds_role=${expired}`;
+  expireCookies([AUTH_COOKIES.SESSION, AUTH_COOKIES.ROLE, ...LEGACY_COOKIES]);
 }

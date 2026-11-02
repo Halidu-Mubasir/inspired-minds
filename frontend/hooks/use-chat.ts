@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useRef, useState, useCallback } from "react";
-import { TOKEN_KEYS, WS_BASE_URL } from "@/lib/constants";
+import { WS_BASE_URL } from "@/lib/constants";
 import { chatApi } from "@/lib/api/chat";
+import { getValidAccessToken } from "@/lib/api/client";
 import type { Message } from "@/lib/api/chat";
 
 interface UseChatReturn {
@@ -54,9 +55,10 @@ export function useChat(conversationId: string | null, currentUserId?: string): 
   }, []);
 
   // Connect WebSocket
-  const connect = useCallback((convId: string) => {
-    const token = typeof window !== "undefined" ? localStorage.getItem(TOKEN_KEYS.ACCESS) : null;
-    if (!token) return;
+  const connect = useCallback(async (convId: string) => {
+    // The socket authenticates once, on connect, so make sure the token is current.
+    const token = await getValidAccessToken();
+    if (!token || conversationIdRef.current !== convId) return;
 
     const url = `${WS_BASE_URL}/chat/${convId}/?token=${token}`;
     const ws = new WebSocket(url);

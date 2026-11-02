@@ -1,5 +1,5 @@
 import { TOKEN_KEYS } from "@/lib/constants";
-import { setAuthCookies, clearAuthCookies } from "@/lib/auth-cookies";
+import { setSessionCookies, clearAuthCookies } from "@/lib/auth-cookies";
 
 export interface UserData {
   id: string;
@@ -12,21 +12,46 @@ export interface UserData {
   is_active: boolean;
 }
 
+// Treat tokens as expired slightly early so they don't lapse in flight.
+const EXPIRY_MARGIN_MS = 30_000;
+
+/** Expiry (ms since epoch) from a JWT's `exp` claim, or null if it can't be read. */
+export function getTokenExpiry(token: string): number | null {
+  try {
+    const payload = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    const { exp } = JSON.parse(atob(payload));
+    return typeof exp === "number" ? exp * 1000 : null;
+  } catch {
+    return null;
+  }
+}
+
+export function isTokenFresh(token: string | null): boolean {
+  const exp = token ? getTokenExpiry(token) : null;
+  return exp !== null && Date.now() < exp - EXPIRY_MARGIN_MS;
+}
+
 export function setAuthTokens(
   accessToken: string,
   refreshToken: string,
   user: UserData
 ): void {
   if (typeof window === "undefined") return;
-  // Store in localStorage
   localStorage.setItem(TOKEN_KEYS.ACCESS, accessToken);
   localStorage.setItem(TOKEN_KEYS.REFRESH, refreshToken);
   localStorage.setItem(TOKEN_KEYS.USER, JSON.stringify(user));
-  // Also store access token expiry (1 day = 86400s)
-  const expiresAt = Date.now() + 23 * 60 * 60 * 1000; // 23 hours
-  localStorage.setItem(`${TOKEN_KEYS.ACCESS}_exp`, String(expiresAt));
-  // Set cookies for SSR middleware auth check
-  setAuthCookies(accessToken, user, expiresAt);
+  localStorage.removeItem(`${TOKEN_KEYS.ACCESS}_exp`); // written by earlier versions
+  setSessionCookies(user.role, getTokenExpiry(refreshToken) ?? Date.now());
+}
+
+/** Stores tokens from a refresh. The refresh token rotates, extending the session. */
+export function updateTokens(accessToken: string, refreshToken?: string): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(TOKEN_KEYS.ACCESS, accessToken);
+  if (!refreshToken) return;
+  localStorage.setItem(TOKEN_KEYS.REFRESH, refreshToken);
+  const user = getStoredUser();
+  if (user) setSessionCookies(user.role, getTokenExpiry(refreshToken) ?? Date.now());
 }
 
 export function clearAuthTokens(): void {
@@ -54,17 +79,6 @@ export function getAuthTokens(): {
     return { accessToken, refreshToken, user };
   } catch {
     return { accessToken: null, refreshToken: null, user: null };
-  }
-}
-
-export function isTokenValid(): boolean {
-  if (typeof window === "undefined") return false;
-  try {
-    const exp = localStorage.getItem(`${TOKEN_KEYS.ACCESS}_exp`);
-    if (!exp) return false;
-    return Date.now() < parseInt(exp);
-  } catch {
-    return false;
   }
 }
 

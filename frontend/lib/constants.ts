@@ -20,3 +20,9 @@ export const TOKEN_KEYS = {
   REFRESH: "inspired_minds_refresh",
   USER: "inspired_minds_user",
 } as const;
+
+/** Cookies the Next.js middleware reads to gate routes. They hold no credentials. */
+export const AUTH_COOKIES = {
+  SESSION: "inspired_minds_session", // refresh-token expiry, ms since epoch
+  ROLE: "inspired_minds_role",
+} as const;

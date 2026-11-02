@@ -75,8 +75,8 @@ daphne -b 0.0.0.0 -p 8000 setup.asgi:application  # ASGI server (for WebSocket)
 
 ### API Client Pattern
 - All API calls in `lib/api/` modules (auth.ts, users.ts, pairings.ts, etc.)
-- JWT tokens stored in cookies + localStorage (dual storage)
-- Token refresh handled automatically
+- JWT tokens stored in localStorage; cookies hold only session expiry + role for `middleware.ts` route gating
+- Access tokens last 30 min; `lib/api/client.ts` refreshes them (single-flight, and on 401). Refresh tokens rotate and are blacklisted on logout/password change
 - Base URL from `NEXT_PUBLIC_API_URL` env var
 
 ### Running Frontend
@@ -99,6 +99,12 @@ CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001  # LMS frontend
 REDIS_URL=redis://localhost:6379/0
 PRIVATE_MEDIA_ROOT=  # optional; resource uploads, never web-served (default backend/private_media)
 ENQUIRY_THROTTLE_RATE=10/hour  # optional; public website form rate limit per IP
+LOGIN_THROTTLE_RATE=10/minute  # optional; per IP
+PASSWORD_RESET_THROTTLE_RATE=5/hour  # optional; per IP
+FRONTEND_URL=http://localhost:3000  # LMS frontend, used in password reset links
+EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend  # smtp.EmailBackend in production
+EMAIL_HOST= EMAIL_PORT=587 EMAIL_HOST_USER= EMAIL_HOST_PASSWORD= EMAIL_USE_TLS=True
+DEFAULT_FROM_EMAIL=Inspired Minds <no-reply@your-domain>  # sender for password reset emails
 AI_PROVIDER=anthropic
 AI_MODEL=claude-sonnet-4-20250514
 ANTHROPIC_API_KEY=
