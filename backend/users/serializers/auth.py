@@ -1,6 +1,5 @@
 from django.contrib.auth import authenticate
 from rest_framework import serializers
-from users.models import CustomUser
 
 
 class LoginSerializer(serializers.Serializer):
@@ -17,33 +16,6 @@ class LoginSerializer(serializers.Serializer):
             raise serializers.ValidationError("This account has been deactivated.")
         data["user"] = user
         return data
-
-
-class RegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, min_length=8)
-    password2 = serializers.CharField(write_only=True)
-
-    class Meta:
-        model = CustomUser
-        fields = ["email", "first_name", "last_name", "role", "phone_number", "password", "password2"]
-
-    def validate(self, data):
-        if data["password"] != data.pop("password2"):
-            raise serializers.ValidationError({"password2": "Passwords do not match."})
-        return data
-
-    def create(self, validated_data):
-        password = validated_data.pop("password")
-        user = CustomUser(**validated_data)
-        user.set_password(password)
-        user.save()
-        # Auto-create profile
-        from users.models import TeacherProfile, StudentProfile
-        if user.role == "teacher":
-            TeacherProfile.objects.create(user=user)
-        elif user.role == "student":
-            StudentProfile.objects.create(user=user)
-        return user
 
 
 class ChangePasswordSerializer(serializers.Serializer):

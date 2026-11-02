@@ -32,10 +32,10 @@ async function refreshAccessToken(): Promise<string | null> {
   }
 }
 
-export async function apiRequest<T>(
+async function authorizedFetch(
   endpoint: string,
   options: RequestOptions = {}
-): Promise<T> {
+): Promise<Response> {
   const { method = "GET", body, headers = {}, isFormData = false } = options;
 
   // Get access token
@@ -85,6 +85,25 @@ export async function apiRequest<T>(
     throw { status: res.status, data: errorData };
   }
 
+  return res;
+}
+
+export async function apiRequest<T>(
+  endpoint: string,
+  options: RequestOptions = {}
+): Promise<T> {
+  const res = await authorizedFetch(endpoint, options);
   if (res.status === 204) return undefined as T;
   return res.json();
+}
+
+/** Fetches a file with the user's credentials and hands it to the browser as a download. */
+export async function apiDownload(endpoint: string, fileName: string): Promise<void> {
+  const res = await authorizedFetch(endpoint);
+  const url = URL.createObjectURL(await res.blob());
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  link.click();
+  URL.revokeObjectURL(url);
 }

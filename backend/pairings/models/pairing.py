@@ -1,11 +1,24 @@
 from django.db import models
 from setup.base_model import BaseModel
+from users.models import UserRole
 
 
 class PairingStatus(models.TextChoices):
     ACTIVE = "active", "Active"
     PAUSED = "paused", "Paused"
     ENDED = "ended", "Ended"
+
+
+class PairingQuerySet(models.QuerySet):
+    def for_user(self, user):
+        """Pairings the user takes part in (admins see all)."""
+        if user.role == UserRole.ADMIN:
+            return self.all()
+        if user.role == UserRole.TEACHER:
+            return self.filter(teacher=user)
+        if user.role == UserRole.STUDENT:
+            return self.filter(student=user)
+        return self.none()
 
 
 class TeacherStudentPairing(BaseModel):
@@ -35,6 +48,8 @@ class TeacherStudentPairing(BaseModel):
         blank=True,
         related_name="created_pairings",
     )
+
+    objects = PairingQuerySet.as_manager()
 
     class Meta:
         unique_together = ["teacher", "student", "subject"]

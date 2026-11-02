@@ -43,7 +43,19 @@ interface ResourceCardProps {
 
 export function ResourceCard({ resource, canDelete = false, onDeleted }: ResourceCardProps) {
   const [deleting, setDeleting] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const Icon = getFileIcon(resource.mime_type, resource.resource_type);
+
+  async function handleDownload() {
+    setDownloading(true);
+    try {
+      await resourcesApi.download(resource);
+    } catch {
+      toast.error("Failed to download file");
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   async function handleDelete() {
     if (!confirm(`Delete "${resource.title}"?`)) return;
@@ -86,16 +98,15 @@ export function ResourceCard({ resource, canDelete = false, onDeleted }: Resourc
         </div>
 
         <div className="flex gap-2 mt-3">
-          <a
-            href={resourcesApi.getDownloadUrl(resource.id)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex-1"
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex-1 gap-1.5 text-xs"
+            onClick={handleDownload}
+            disabled={downloading}
           >
-            <Button size="sm" variant="outline" className="w-full gap-1.5 text-xs">
-              <Download className="h-3.5 w-3.5" /> Download
-            </Button>
-          </a>
+            <Download className="h-3.5 w-3.5" /> {downloading ? "Downloading..." : "Download"}
+          </Button>
           {canDelete && (
             <Button
               size="sm"

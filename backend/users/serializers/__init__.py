@@ -1,4 +1,4 @@
-from .auth import LoginSerializer, RegisterSerializer, ChangePasswordSerializer
+from .auth import LoginSerializer, ChangePasswordSerializer
 from .profile import (
     UserSerializer,
     UserListSerializer,
@@ -10,7 +10,6 @@ from .profile import (
 
 __all__ = [
     "LoginSerializer",
-    "RegisterSerializer",
     "ChangePasswordSerializer",
     "UserSerializer",
     "UserListSerializer",

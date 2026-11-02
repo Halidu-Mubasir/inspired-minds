@@ -1,5 +1,6 @@
 from django.db import models
 from setup.base_model import BaseModel
+from users.models import UserRole
 
 
 class LessonStatus(models.TextChoices):
@@ -7,6 +8,18 @@ class LessonStatus(models.TextChoices):
     SCHEDULED = "scheduled", "Scheduled"
     COMPLETED = "completed", "Completed"
     CANCELLED = "cancelled", "Cancelled"
+
+
+class LessonQuerySet(models.QuerySet):
+    def for_user(self, user):
+        """Lessons on pairings the user takes part in (admins see all)."""
+        if user.role == UserRole.ADMIN:
+            return self.all()
+        if user.role == UserRole.TEACHER:
+            return self.filter(pairing__teacher=user)
+        if user.role == UserRole.STUDENT:
+            return self.filter(pairing__student=user)
+        return self.none()
 
 
 class Lesson(BaseModel):
@@ -28,6 +41,8 @@ class Lesson(BaseModel):
     teacher_notes = models.TextField(blank=True, null=True)
     student_notes = models.TextField(blank=True, null=True)
     homework = models.TextField(blank=True, null=True)
+
+    objects = LessonQuerySet.as_manager()
 
     class Meta:
         ordering = ["-scheduled_date", "-scheduled_time"]
