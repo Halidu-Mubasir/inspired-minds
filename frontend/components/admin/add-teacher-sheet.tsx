@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/form";
 import { SubjectPicker } from "@/components/shared/subject-picker";
 import { useSubjects } from "@/hooks/use-subjects";
+import { getErrorMessage } from "@/lib/api/errors";
 import { usersApi } from "@/lib/api/users";
 import type { User } from "@/lib/api/users";
 
@@ -73,8 +74,8 @@ export function AddTeacherSheet({ open, onClose, onCreated }: AddTeacherSheetPro
       form.reset();
       onCreated(user);
       onClose();
-    } catch {
-      toast.error("Failed to create teacher");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to create teacher"));
     } finally {
       setLoading(false);
     }

@@ -8,7 +8,6 @@ from .auth import (
 )
 from .profile import (
     UserSerializer,
-    UserListSerializer,
     TeacherProfileSerializer,
     StudentProfileSerializer,
     CreateTeacherSerializer,
@@ -23,7 +22,6 @@ __all__ = [
     "PasswordResetRequestSerializer",
     "PasswordResetConfirmSerializer",
     "UserSerializer",
-    "UserListSerializer",
     "TeacherProfileSerializer",
     "StudentProfileSerializer",
     "CreateTeacherSerializer",

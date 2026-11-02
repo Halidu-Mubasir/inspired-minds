@@ -3,22 +3,32 @@ import { apiRequest } from "./client";
 export interface TeacherProfile {
   id: string;
   subjects: string[];
-  qualifications: string;
-  bio: string;
+  qualifications: string | null;
+  bio: string | null;
   years_of_experience: number;
   hourly_rate: string | null;
   is_available: boolean;
 }
 
+export type EducationLevel = "primary" | "jhs" | "shs" | "university" | "other";
+
+export const EDUCATION_LEVEL_LABELS: Record<EducationLevel, string> = {
+  primary: "Primary",
+  jhs: "JHS",
+  shs: "SHS",
+  university: "University",
+  other: "Other",
+};
+
 export interface StudentProfile {
   id: string;
-  education_level: string;
-  school_name: string;
-  grade_or_year: string;
+  education_level: EducationLevel | null;
+  school_name: string | null;
+  grade_or_year: string | null;
   subjects_of_interest: string[];
-  parent_guardian_name: string;
-  parent_guardian_phone: string;
-  parent_guardian_email: string;
+  parent_guardian_name: string | null;
+  parent_guardian_phone: string | null;
+  parent_guardian_email: string | null;
 }
 
 export interface User {
@@ -35,6 +45,16 @@ export interface User {
   student_profile?: StudentProfile;
   created_at: string;
   updated_at: string;
+}
+
+export interface DashboardStats {
+  /** Active accounts only. */
+  total_teachers: number;
+  inactive_teachers: number;
+  /** Active accounts only. */
+  total_students: number;
+  inactive_students: number;
+  active_pairings: number;
 }
 
 export interface PaginatedResponse<T> {
@@ -72,6 +92,5 @@ export const usersApi = {
     apiRequest<{ message: string }>(`/auth/students/${id}/`, { method: "DELETE" }),
 
   // Stats
-  getDashboardStats: () =>
-    apiRequest<{ total_teachers: number; total_students: number; active_pairings: number }>("/auth/dashboard-stats/"),
+  getDashboardStats: () => apiRequest<DashboardStats>("/auth/dashboard-stats/"),
 };

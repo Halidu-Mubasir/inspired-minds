@@ -9,6 +9,8 @@ interface UseChatReturn {
   messages: Message[];
   isConnected: boolean;
   isLoadingHistory: boolean;
+  /** The last history request failed; `messages` may be incomplete. */
+  historyError: boolean;
   hasMore: boolean;
   otherUserTyping: boolean;
   sendMessage: (content: string) => void;
@@ -20,6 +22,7 @@ export function useChat(conversationId: string | null, currentUserId?: string): 
   const [messages, setMessages] = useState<Message[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [historyError, setHistoryError] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [page, setPage] = useState(1);
   const [otherUserTyping, setOtherUserTyping] = useState(false);
@@ -33,6 +36,7 @@ export function useChat(conversationId: string | null, currentUserId?: string): 
   // Load message history
   const loadHistory = useCallback(async (convId: string, pageNum: number) => {
     setIsLoadingHistory(true);
+    setHistoryError(false);
     try {
       const res = await chatApi.getMessages(convId, { page: String(pageNum), page_size: "50" });
       // The API pages newest-first; display oldest-first.
@@ -48,7 +52,7 @@ export function useChat(conversationId: string | null, currentUserId?: string): 
         });
       }
     } catch {
-      // silently ignore
+      setHistoryError(true);
     } finally {
       setIsLoadingHistory(false);
     }
@@ -125,6 +129,7 @@ export function useChat(conversationId: string | null, currentUserId?: string): 
       clearTimeout(reconnectTimeoutRef.current);
     }
     setMessages([]);
+    setHistoryError(false);
     setPage(1);
     setHasMore(false);
     setIsConnected(false);
@@ -164,5 +169,5 @@ export function useChat(conversationId: string | null, currentUserId?: string): 
     loadHistory(conversationId, nextPage);
   }, [conversationId, isLoadingHistory, hasMore, page, loadHistory]);
 
-  return { messages, isConnected, isLoadingHistory, hasMore, otherUserTyping, sendMessage, sendTyping, loadMore };
+  return { messages, isConnected, isLoadingHistory, historyError, hasMore, otherUserTyping, sendMessage, sendTyping, loadMore };
 }

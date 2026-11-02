@@ -83,6 +83,13 @@ daphne -b 0.0.0.0 -p 8000 setup.asgi:application  # ASGI server (for WebSocket)
 - Access tokens last 30 min; `lib/api/client.ts` refreshes them (single-flight, and on 401). Refresh tokens rotate and are blacklisted on logout/password change
 - Base URL from `NEXT_PUBLIC_API_URL` env var
 
+### Data Fetching & State
+- Server data goes through React Query (`@tanstack/react-query`); keys live in `lib/query-keys.ts`, grouped so a prefix (e.g. `queryKeys.pairings.all`) invalidates a whole family. After a mutation, invalidate rather than hand-editing local lists
+- Lists are paginated, searched and filtered server-side (DRF `page`, `search`, filter params) with `PaginationControls` and `useDebouncedValue`; never filter or count only the first page client-side
+- Render `ErrorState` (or `DetailPageError`, which distinguishes 404) for failed queries; don't swallow errors with `.catch(() => {})`. Use `getErrorMessage` from `lib/api/errors.ts` for toasts
+- The signed-in user comes from `useAuth()` (one `AuthProvider` in `components/providers.tsx`)
+- Shared UI: `PairingStatusBadge` / `LessonStatusBadge`, `UserDirectory`, `LessonList`, `ResourceBrowser`; date helpers (`formatDate`, `formatLongDate`, `formatTime`) in `lib/utils.ts` use date-fns
+
 ### Running Frontend
 ```bash
 cd frontend

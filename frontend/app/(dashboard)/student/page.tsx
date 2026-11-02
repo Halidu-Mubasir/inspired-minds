@@ -1,19 +1,12 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { BookOpen, FileText, MessageSquare, Bot } from "lucide-react";
 import { StatCard } from "@/components/shared/stat-card";
 import { pairingsApi } from "@/lib/api/pairings";
-import type { Pairing } from "@/lib/api/pairings";
+import { queryKeys } from "@/lib/query-keys";
 
 export default function StudentDashboardPage() {
-  const [pairings, setPairings] = useState<Pairing[]>([]);
-
-  useEffect(() => {
-    pairingsApi
-      .getMyTeachers()
-      .then(setPairings)
-      .catch(() => {});
-  }, []);
+  const { data: pairings = [] } = useQuery({ queryKey: queryKeys.pairings.myTeachers, queryFn: pairingsApi.getMyTeachers });
 
   const activeTeacher = pairings.find((p) => p.status === "active");
   const teacherLabel = activeTeacher

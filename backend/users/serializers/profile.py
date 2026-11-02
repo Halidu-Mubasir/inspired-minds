@@ -46,13 +46,6 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "email", "role", "is_active", "created_at", "updated_at"]
 
 
-class UserListSerializer(serializers.ModelSerializer):
-    """Lightweight serializer for listing users."""
-    class Meta:
-        model = CustomUser
-        fields = ["id", "email", "first_name", "last_name", "phone_number", "avatar", "role", "is_active"]
-
-
 def _create_user(role, validated_data):
     password = validated_data.pop("password")
     user = CustomUser(role=role, **validated_data)

@@ -1,12 +1,13 @@
+import django_filters
 from rest_framework.views import APIView
 from rest_framework.generics import RetrieveUpdateAPIView, ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
-from users.models import CustomUser, TeacherProfile, StudentProfile
+from users.models import CustomUser, TeacherProfile, StudentProfile, EducationLevel, UserRole
 from users.serializers import (
-    UserSerializer, UserListSerializer,
+    UserSerializer,
     CreateTeacherSerializer, CreateStudentSerializer,
     TeacherProfileSerializer, StudentProfileSerializer,
 )
@@ -38,18 +39,48 @@ class ChangeAvatarView(APIView):
         return Response({"avatar": request.build_absolute_uri(user.avatar.url)})
 
 
+USER_SEARCH_FIELDS = ["first_name", "last_name", "email"]
+
+
+class TeacherFilter(django_filters.FilterSet):
+    is_active = django_filters.BooleanFilter()
+    is_available = django_filters.BooleanFilter(field_name="teacher_profile__is_available")
+
+    class Meta:
+        model = CustomUser
+        fields = ["is_active", "is_available"]
+
+
+class StudentFilter(django_filters.FilterSet):
+    is_active = django_filters.BooleanFilter()
+    education_level = django_filters.ChoiceFilter(
+        field_name="student_profile__education_level", choices=EducationLevel.choices
+    )
+
+    class Meta:
+        model = CustomUser
+        fields = ["is_active", "education_level"]
+
+
 # --- Admin: Teacher Management ---
 
 class TeacherListCreateView(ListCreateAPIView):
     permission_classes = [IsAdmin]
+    filterset_class = TeacherFilter
+    search_fields = USER_SEARCH_FIELDS
 
     def get_queryset(self):
-        return CustomUser.objects.filter(role="teacher").select_related("teacher_profile").order_by("-created_at")
+        return (
+            CustomUser.objects.filter(role=UserRole.TEACHER)
+            .select_related("teacher_profile")
+            .prefetch_related("teacher_profile__subjects")
+            .order_by("-created_at")
+        )
 
     def get_serializer_class(self):
         if self.request.method == "POST":
             return CreateTeacherSerializer
-        return UserListSerializer
+        return UserSerializer
 
     def create(self, request, *args, **kwargs):
         serializer = CreateTeacherSerializer(data=request.data)
@@ -72,14 +103,21 @@ class TeacherDetailView(RetrieveUpdateDestroyAPIView):
 
 class StudentListCreateView(ListCreateAPIView):
     permission_classes = [IsAdmin]
+    filterset_class = StudentFilter
+    search_fields = USER_SEARCH_FIELDS
 
     def get_queryset(self):
-        return CustomUser.objects.filter(role="student").select_related("student_profile").order_by("-created_at")
+        return (
+            CustomUser.objects.filter(role=UserRole.STUDENT)
+            .select_related("student_profile")
+            .prefetch_related("student_profile__subjects_of_interest")
+            .order_by("-created_at")
+        )
 
     def get_serializer_class(self):
         if self.request.method == "POST":
             return CreateStudentSerializer
-        return UserListSerializer
+        return UserSerializer
 
     def create(self, request, *args, **kwargs):
         serializer = CreateStudentSerializer(data=request.data)
@@ -105,9 +143,14 @@ class DashboardStatsView(APIView):
 
     def get(self, request):
         from pairings.models import TeacherStudentPairing, PairingStatus
+        teachers = CustomUser.objects.filter(role=UserRole.TEACHER)
+        students = CustomUser.objects.filter(role=UserRole.STUDENT)
         stats = {
-            "total_teachers": CustomUser.objects.filter(role="teacher", is_active=True).count(),
-            "total_students": CustomUser.objects.filter(role="student", is_active=True).count(),
+            # total_* count active accounts only (kept for existing clients).
+            "total_teachers": teachers.filter(is_active=True).count(),
+            "inactive_teachers": teachers.filter(is_active=False).count(),
+            "total_students": students.filter(is_active=True).count(),
+            "inactive_students": students.filter(is_active=False).count(),
             "active_pairings": TeacherStudentPairing.objects.filter(status=PairingStatus.ACTIVE).count(),
         }
         return Response(stats)

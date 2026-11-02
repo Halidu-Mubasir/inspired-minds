@@ -89,6 +89,7 @@ class LibraryListView(generics.ListCreateAPIView):
     permission_classes = [IsAdminOrTeacherOrReadOnly]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
     filter_backends = [DjangoFilterBackend, SearchFilter]
+    filterset_class = ResourceFilter
     search_fields = ["title", "subject__name", "description"]
 
     def get_queryset(self):

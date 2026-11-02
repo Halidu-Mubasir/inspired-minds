@@ -33,8 +33,9 @@ export interface Message {
 }
 
 export const chatApi = {
-  getConversations: () =>
-    apiRequest<Conversation[] | PaginatedResponse<Conversation>>("/chat/conversations/"),
+  /** A user has one conversation per pairing, so a single large page covers everyone. */
+  getConversations: async () =>
+    (await apiRequest<PaginatedResponse<Conversation>>("/chat/conversations/?page_size=100")).results,
   getConversation: (id: string) =>
     apiRequest<Conversation>(`/chat/conversations/${id}/`),
   getMessages: (id: string, params?: Record<string, string>) => {

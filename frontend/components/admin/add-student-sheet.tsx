@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { SubjectPicker } from "@/components/shared/subject-picker";
 import { useSubjects } from "@/hooks/use-subjects";
+import { getErrorMessage } from "@/lib/api/errors";
 import { usersApi } from "@/lib/api/users";
 import type { User } from "@/lib/api/users";
 
@@ -88,8 +89,8 @@ export function AddStudentSheet({ open, onClose, onCreated }: AddStudentSheetPro
       form.reset();
       onCreated(user);
       onClose();
-    } catch {
-      toast.error("Failed to create student");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to create student"));
     } finally {
       setLoading(false);
     }

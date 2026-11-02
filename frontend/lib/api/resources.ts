@@ -15,13 +15,13 @@ export interface Resource {
   title: string;
   description: string | null;
   resource_type: ResourceType;
-  subject: string;
+  subject: string | null;
   visibility: ResourceVisibility;
   file_name: string;
   file_size: number;
   mime_type: string;
   file_url?: string;
-  uploaded_by: ResourceUploaderSummary;
+  uploaded_by: ResourceUploaderSummary | null;
   pairing_id: string | null;
   lesson_id: string | null;
   created_at: string;

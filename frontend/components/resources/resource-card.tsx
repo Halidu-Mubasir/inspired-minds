@@ -7,14 +7,10 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { formatFileSize } from "@/lib/utils";
+import { getErrorMessage } from "@/lib/api/errors";
 import { resourcesApi, RESOURCE_TYPE_LABELS } from "@/lib/api/resources";
 import type { Resource, ResourceType } from "@/lib/api/resources";
-
-function formatFileSize(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 function getFileIcon(mimeType: string, resourceType: ResourceType) {
   if (mimeType.startsWith("image/")) return Image;
@@ -50,8 +46,8 @@ export function ResourceCard({ resource, canDelete = false, onDeleted }: Resourc
     setDownloading(true);
     try {
       await resourcesApi.download(resource);
-    } catch {
-      toast.error("Failed to download file");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to download file"));
     } finally {
       setDownloading(false);
     }
@@ -64,8 +60,8 @@ export function ResourceCard({ resource, canDelete = false, onDeleted }: Resourc
       await resourcesApi.delete(resource.id);
       toast.success("Resource deleted");
       onDeleted?.(resource.id);
-    } catch {
-      toast.error("Failed to delete resource");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to delete resource"));
     } finally {
       setDeleting(false);
     }

@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, useRouter } from "next/navigation";
 import { ArrowLeft, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,34 +12,31 @@ import { useChat } from "@/hooks/use-chat";
 import { chatApi } from "@/lib/api/chat";
 import { useAuth } from "@/hooks/use-auth";
 import type { Conversation } from "@/lib/api/chat";
+import { queryKeys } from "@/lib/query-keys";
 
 export function ChatPage() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [loadingConvs, setLoadingConvs] = useState(true);
+  const queryClient = useQueryClient();
   const [mobileShowThread, setMobileShowThread] = useState(false);
 
   const activeId = searchParams.get("id");
 
-  // Load conversations
-  useEffect(() => {
-    chatApi.getConversations()
-      .then((res) => {
-        const results = Array.isArray(res) ? res : (res as { results?: Conversation[] }).results ?? [];
-        setConversations(results);
-      })
-      .catch(() => {})
-      .finally(() => setLoadingConvs(false));
-  }, []);
+  const conversationsQuery = useQuery({ queryKey: queryKeys.conversations, queryFn: chatApi.getConversations });
+  const conversations = conversationsQuery.data ?? [];
 
-  // Update unread count on conversation when read
-  const updateConvUnread = useCallback((convId: string) => {
-    setConversations((prev) =>
-      prev.map((c) => (c.id === convId ? { ...c, unread_count: 0 } : c))
-    );
-  }, []);
+  /** Patch one conversation in the cached list (unread count, latest message preview). */
+  const patchConversation = useCallback(
+    (convId: string, patch: Partial<Conversation>) => {
+      queryClient.setQueryData<Conversation[]>(queryKeys.conversations, (prev) =>
+        prev?.map((c) => (c.id === convId ? { ...c, ...patch } : c))
+      );
+    },
+    [queryClient]
+  );
+
+  const updateConvUnread = useCallback((convId: string) => patchConversation(convId, { unread_count: 0 }), [patchConversation]);
 
   function selectConversation(id: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -57,6 +55,7 @@ export function ChatPage() {
     messages,
     isConnected,
     isLoadingHistory,
+    historyError,
     hasMore,
     otherUserTyping,
     sendMessage,
@@ -67,7 +66,7 @@ export function ChatPage() {
   // Mark as read when conversation opens
   useEffect(() => {
     if (activeId) {
-      chatApi.markRead(activeId).catch(() => {});
+      chatApi.markRead(activeId).catch(() => {}); // best effort; the socket "read" event also marks messages
       updateConvUnread(activeId);
     }
   }, [activeId, updateConvUnread]);
@@ -76,14 +75,8 @@ export function ChatPage() {
   useEffect(() => {
     if (!activeId || messages.length === 0) return;
     const last = messages[messages.length - 1];
-    setConversations((prev) =>
-      prev.map((c) =>
-        c.id === activeId
-          ? { ...c, last_message_preview: last.content, last_message_at: last.created_at }
-          : c
-      )
-    );
-  }, [messages, activeId]);
+    patchConversation(activeId, { last_message_preview: last.content, last_message_at: last.created_at });
+  }, [messages, activeId, patchConversation]);
 
   return (
     <div className="flex h-[calc(100vh-4rem)] overflow-hidden rounded-xl border bg-background">
@@ -94,7 +87,9 @@ export function ChatPage() {
         </div>
         <ConversationList
           conversations={conversations}
-          loading={loadingConvs}
+          loading={conversationsQuery.isPending}
+          error={conversationsQuery.isError ? conversationsQuery.error : undefined}
+          onRetry={() => conversationsQuery.refetch()}
           activeId={activeId}
           currentUserId={user?.id}
           onSelect={selectConversation}
@@ -138,6 +133,7 @@ export function ChatPage() {
               messages={messages}
               currentUserId={user?.id}
               isLoadingHistory={isLoadingHistory}
+              historyError={historyError}
               hasMore={hasMore}
               otherUserTyping={otherUserTyping}
               onLoadMore={loadMore}

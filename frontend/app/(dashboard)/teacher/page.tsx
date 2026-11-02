@@ -1,18 +1,13 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { BookOpen, GraduationCap, MessageSquare, Brain } from "lucide-react";
 import { StatCard } from "@/components/shared/stat-card";
 import { pairingsApi } from "@/lib/api/pairings";
+import { queryKeys } from "@/lib/query-keys";
 
 export default function TeacherDashboardPage() {
-  const [studentCount, setStudentCount] = useState<number | string>("—");
-
-  useEffect(() => {
-    pairingsApi
-      .getMyStudents()
-      .then((pairings) => setStudentCount(pairings.filter((p) => p.status === "active").length))
-      .catch(() => {});
-  }, []);
+  const { data: pairings } = useQuery({ queryKey: queryKeys.pairings.myStudents, queryFn: pairingsApi.getMyStudents });
+  const studentCount = pairings ? pairings.length : "—";
 
   return (
     <div className="space-y-6">
