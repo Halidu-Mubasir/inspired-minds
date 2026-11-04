@@ -1,7 +1,10 @@
-# Render Blueprint for the LMS backend: Django API + WebSockets (Daphne), Postgres, Key Value
-# (Redis) for chat and rate limits, and a disk for uploads. The LMS frontend and the website
-# are deployed on Vercel. Apply from the Render dashboard: New > Blueprint > this repo.
-# All resources share one region so they talk over Render's private network.
+# Render Blueprint for the LMS backend on free tiers: Django API + WebSockets (Daphne) on a
+# free web service, Postgres on Neon (free), uploads in Cloudflare R2 (free). One instance, so
+# chat uses the in-memory channel layer and needs no Redis. The LMS frontend and the website
+# are on Vercel. Apply from the Render dashboard: New > Blueprint > this repo. See DEPLOYMENT.md.
+#
+# Free web services sleep after 15 minutes without traffic; the next request wakes them in
+# about a minute. To grow: switch `plan`, add Render Postgres/Key Value, set REDIS_URL.
 
 services:
   - type: web
@@ -10,64 +13,33 @@ services:
     dockerContext: ./backend
     dockerfilePath: ./backend/Dockerfile
     region: frankfurt
-    # Disks need a paid instance; a disk also pins the service to one instance.
-    plan: 0.5c-512mb
+    plan: free
     healthCheckPath: /healthz/
     autoDeployTrigger: commit
-    disk:
-      name: uploads
-      mountPath: /app/data
-      sizeGB: 1
     envVars:
       - key: SECRET_KEY
         generateValue: true
       - key: DEBUG
         value: "False"
-      - key: USE_POSTGRES
-        value: "True"
-      - key: DB_HOST
-        fromDatabase: { name: inspired-minds-db, property: host }
-      - key: DB_PORT
-        fromDatabase: { name: inspired-minds-db, property: port }
-      - key: DB_NAME
-        fromDatabase: { name: inspired-minds-db, property: database }
-      - key: DB_USER
-        fromDatabase: { name: inspired-minds-db, property: user }
-      - key: DB_PASSWORD
-        fromDatabase: { name: inspired-minds-db, property: password }
-      - key: REDIS_URL
-        fromService: { type: keyvalue, name: inspired-minds-redis, property: connectionString }
-      - key: USE_REDIS_CACHE
-        value: "True"
       # Render's proxy is the one hop in front of Django (rate limits read the client IP).
       - key: NUM_PROXIES
         value: "1"
-      - key: MEDIA_ROOT
-        value: /app/data/media
-      - key: PRIVATE_MEDIA_ROOT
-        value: /app/data/private_media
-      - key: SERVE_MEDIA
-        value: "True"
-      # Set these in the dashboard once the Vercel URLs are known (see DEPLOYMENT.md).
+      # Neon connection string, e.g. postgresql://user:pass@ep-xxx.eu-central-1.aws.neon.tech/inspired_minds?sslmode=require
+      - key: DATABASE_URL
+        sync: false
+      # Cloudflare R2 bucket for uploads (resources and avatars).
+      - key: S3_BUCKET
+        sync: false
+      - key: S3_ENDPOINT_URL
+        sync: false
+      - key: S3_ACCESS_KEY_ID
+        sync: false
+      - key: S3_SECRET_ACCESS_KEY
+        sync: false
+      # Set once the Vercel URLs are known.
       - key: CORS_ALLOWED_ORIGINS
         sync: false
       - key: FRONTEND_URL
         sync: false
       - key: ANTHROPIC_API_KEY
         sync: false
-
-  - type: keyvalue
-    name: inspired-minds-redis
-    region: frankfurt
-    plan: free
-    # Channels' message queues must not be evicted.
-    maxmemoryPolicy: noeviction
-    ipAllowList: [] # private network only
-
-databases:
-  - name: inspired-minds-db
-    region: frankfurt
-    plan: 0.1c-256mb
-    databaseName: inspired_minds
-    user: inspired_minds
-    ipAllowList: [] # private network only

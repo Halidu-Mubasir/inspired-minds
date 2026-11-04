@@ -113,7 +113,9 @@ USE_POSTGRES=True  # SQLite (backend/db.sqlite3) when False
 DB_NAME=inspired_minds DB_USER=postgres DB_PASSWORD=postgres DB_HOST=localhost DB_PORT=5432
 ALLOWED_HOSTS=localhost,127.0.0.1
 CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001  # LMS frontend + marketing website
-REDIS_URL=redis://localhost:6379/0
+DATABASE_URL=  # optional; one postgres:// URL (Neon) instead of USE_POSTGRES + DB_*
+REDIS_URL=  # optional; without it chat uses the in-memory channel layer (one process only)
+S3_BUCKET= S3_ENDPOINT_URL= S3_ACCESS_KEY_ID= S3_SECRET_ACCESS_KEY= S3_REGION=auto  # optional; uploads in an S3-compatible bucket (R2)
 PRIVATE_MEDIA_ROOT=  # optional; resource uploads, never web-served (default backend/private_media)
 ENQUIRY_THROTTLE_RATE=10/hour  # optional; public website form rate limit per IP
 LOGIN_THROTTLE_RATE=10/minute  # optional; per IP
@@ -167,7 +169,7 @@ NEXT_PUBLIC_LMS_URL=http://localhost:3000  # "Log in" links to the LMS
 - CI (`.github/workflows/ci.yml`): backend tests on PostgreSQL (Python 3.13 and 3.14), migration drift check, `check --deploy --fail-level WARNING`; lint, type-check and build for `frontend/` and `website/`; `docker compose build`
 
 ## Deployment
-- Hosted: API on Render (`render.yaml` Blueprint: Docker web + Postgres + Key Value + disk), LMS and website on Vercel. Step-by-step in `DEPLOYMENT.md`. Backend env adds `RENDER_EXTERNAL_HOSTNAME` (set by Render; joins `ALLOWED_HOSTS`/`CSRF_TRUSTED_ORIGINS`), `MEDIA_ROOT`, `SERVE_MEDIA` (Django serves avatars when nothing else can)
+- Hosted on free tiers: API on a Render free web service (`render.yaml`), Postgres on Neon (`DATABASE_URL`), uploads in Cloudflare R2 (`S3_*`; resources under `private/`, served only through the download endpoint), LMS and website on Vercel. Step-by-step in `DEPLOYMENT.md`. `RENDER_EXTERNAL_HOSTNAME` (set by Render) joins `ALLOWED_HOSTS`/`CSRF_TRUSTED_ORIGINS`; `MEDIA_ROOT` and `SERVE_MEDIA` cover disk-based hosts
 - `docker compose up --build` runs Postgres, Redis, the API (Daphne, port 8000), the LMS (3000) and the website (3001); copy `.env.example` to `.env` and set `SECRET_KEY` and `DB_PASSWORD` first
 - `NEXT_PUBLIC_*` URLs are baked in at image build time (compose build args), not read at runtime
 - The API serves its own static files (whitenoise). `/media/` (avatars) must be served by a web server or object storage in production; `private_media/` must never be served

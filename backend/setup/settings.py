@@ -4,6 +4,8 @@ from pathlib import Path
 from datetime import timedelta
 from decouple import config
 
+from setup.env import database_from_url
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 RUNNING_TESTS = len(sys.argv) > 1 and sys.argv[1] == "test"
 if RUNNING_TESTS:
@@ -77,9 +79,13 @@ TEMPLATES = [
 WSGI_APPLICATION = "setup.wsgi.application"
 ASGI_APPLICATION = "setup.asgi.application"
 
-# Database — use PostgreSQL in production, SQLite for local dev
+# Database — PostgreSQL in production, SQLite for local dev. Hosted Postgres (Neon, Render)
+# hands out one DATABASE_URL; the DB_* settings serve docker compose and local Postgres.
+DATABASE_URL = config("DATABASE_URL", default="")
 _USE_POSTGRES = config("USE_POSTGRES", default=False, cast=bool)
-if _USE_POSTGRES:
+if DATABASE_URL:
+    DATABASES = {"default": database_from_url(DATABASE_URL)}
+elif _USE_POSTGRES:
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
@@ -98,20 +104,22 @@ else:
         }
     }
 
-# Redis / Channels
-REDIS_URL = config("REDIS_URL", default="redis://localhost:6379/0")
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [REDIS_URL],
-        },
+# Redis / Channels. Without REDIS_URL, chat messages pass between sockets in process memory:
+# fine for one server process (local dev, a single free instance), wrong for several.
+REDIS_URL = config("REDIS_URL", default="")
+if REDIS_URL:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {"hosts": [REDIS_URL]},
+        }
     }
-}
+else:
+    CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
 
 # Rate limits (DRF throttles) are counted in the cache. The default per-process memory cache
-# is fine for one dev server; with several workers set USE_REDIS_CACHE so they share counts.
-if config("USE_REDIS_CACHE", default=False, cast=bool):
+# is fine for one server; with several workers set USE_REDIS_CACHE so they share counts.
+if REDIS_URL and config("USE_REDIS_CACHE", default=False, cast=bool):
     CACHES = {"default": {"BACKEND": "django.core.cache.backends.redis.RedisCache", "LOCATION": REDIS_URL}}
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -132,6 +140,26 @@ STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
 }
+
+# Uploads in an S3-compatible bucket (Cloudflare R2, AWS S3, Backblaze B2) instead of local disk,
+# for hosts without persistent storage. The bucket stays private: avatars get signed URLs,
+# resources ("private") are only ever streamed through the access-checked download endpoint.
+S3_BUCKET = config("S3_BUCKET", default="")
+if S3_BUCKET:
+    _s3 = {
+        "bucket_name": S3_BUCKET,
+        "endpoint_url": config("S3_ENDPOINT_URL", default="") or None,
+        "access_key": config("S3_ACCESS_KEY_ID"),
+        "secret_key": config("S3_SECRET_ACCESS_KEY"),
+        "region_name": config("S3_REGION", default="auto"),
+        "signature_version": "s3v4",
+        "default_acl": None,
+        "file_overwrite": False,
+        "querystring_auth": True,
+        "querystring_expire": 60 * 60 * 24 * 7,  # SigV4 maximum; avatar URLs refresh on each API read
+    }
+    STORAGES["default"] = {"BACKEND": "storages.backends.s3.S3Storage", "OPTIONS": {**_s3, "location": "media"}}
+    STORAGES["private"] = {"BACKEND": "storages.backends.s3.S3Storage", "OPTIONS": {**_s3, "location": "private"}}
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = config("MEDIA_ROOT", default=str(BASE_DIR / "media"))

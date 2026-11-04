@@ -1,5 +1,5 @@
 from django.conf import settings
-from django.core.files.storage import FileSystemStorage
+from django.core.files.storage import FileSystemStorage, storages
 from django.db import models
 from django.db.models import Q
 from setup.base_model import BaseModel
@@ -8,7 +8,10 @@ from users.models import UserRole
 
 def private_storage():
     """Resource files live outside MEDIA_ROOT so they are only reachable through
-    the access-checked download endpoint, never as a public /media/ URL."""
+    the access-checked download endpoint, never as a public /media/ URL.
+    With S3_BUCKET set they go to the bucket's private/ prefix instead (settings.STORAGES)."""
+    if "private" in settings.STORAGES:
+        return storages["private"]
     return FileSystemStorage(location=settings.PRIVATE_MEDIA_ROOT, base_url=None)
 
 
