@@ -16,15 +16,18 @@ COPY . .
 # Collect admin/API-docs static files for whitenoise. A random key only satisfies settings at build time.
 RUN SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(50))')" python manage.py collectstatic --noinput
 
+# Strip any Windows line endings from the entrypoint so sh can run it.
 RUN useradd --create-home --uid 10001 app \
     && mkdir -p /app/media /app/private_media \
-    && chown -R app:app /app/media /app/private_media
-USER app
+    && chown -R app:app /app/media /app/private_media \
+    && sed -i 's/\r$//' /app/docker-entrypoint.sh \
+    && chmod +x /app/docker-entrypoint.sh
 
+# The entrypoint starts as root only to hand mounted upload disks to "app", then runs
+# migrations and Daphne as "app". Hosts like Render set PORT; 8000 otherwise.
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz/', timeout=4)"
+    CMD python -c "import os, urllib.request; urllib.request.urlopen('http://127.0.0.1:' + os.environ.get('PORT', '8000') + '/healthz/', timeout=4)"
 
-# Migrations run on start; with several replicas, run them as a separate one-off job instead.
-CMD ["sh", "-c", "python manage.py migrate --noinput && daphne -b 0.0.0.0 -p 8000 setup.asgi:application"]
+ENTRYPOINT ["/app/docker-entrypoint.sh"]

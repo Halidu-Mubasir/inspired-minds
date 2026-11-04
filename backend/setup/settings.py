@@ -13,6 +13,10 @@ if RUNNING_TESTS:
 SECRET_KEY = config("SECRET_KEY")
 DEBUG = config("DEBUG", default=False, cast=bool)
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost,127.0.0.1").split(",")
+# Render (render.yaml) tells each service its public hostname.
+RENDER_EXTERNAL_HOSTNAME = config("RENDER_EXTERNAL_HOSTNAME", default="")
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -130,7 +134,9 @@ STORAGES = {
 }
 
 MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_ROOT = config("MEDIA_ROOT", default=str(BASE_DIR / "media"))
+# Django serves /media/ (avatars only) when DEBUG is off and no web server sits in front.
+SERVE_MEDIA = config("SERVE_MEDIA", default=False, cast=bool)
 # Access-controlled uploads (resources). Must never be served by the web server.
 PRIVATE_MEDIA_ROOT = config("PRIVATE_MEDIA_ROOT", default=str(BASE_DIR / "private_media"))
 
@@ -198,6 +204,8 @@ CORS_ALLOWED_ORIGINS = config(
 CORS_ALLOW_CREDENTIALS = True
 # Origins allowed to POST to the Django admin over HTTPS (e.g. https://api.example.com).
 CSRF_TRUSTED_ORIGINS = [o for o in config("CSRF_TRUSTED_ORIGINS", default="").split(",") if o]
+if RENDER_EXTERNAL_HOSTNAME:
+    CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_EXTERNAL_HOSTNAME}")
 
 # Interactive API docs are for development; set EXPOSE_API_DOCS to publish them elsewhere.
 EXPOSE_API_DOCS = config("EXPOSE_API_DOCS", default=DEBUG, cast=bool)
