@@ -146,7 +146,7 @@ export function TutorChatReview({ subtitle }: { subtitle: string }) {
             </div>
             <PaginationControls page={page} count={list.data.count} onPageChange={setPage} />
           </div>
-          <div className="rounded-xl border min-h-[24rem] h-[calc(100vh-16rem)] overflow-hidden">
+          <div className="rounded-xl border min-h-[24rem] h-[calc(100dvh-17rem)] bg-card overflow-hidden">
             {activeId ? (
               <ConversationReview id={activeId} />
             ) : (

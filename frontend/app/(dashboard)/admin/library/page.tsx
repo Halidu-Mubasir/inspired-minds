@@ -20,7 +20,7 @@ export default function AdminLibraryPage() {
         title="Library"
         subtitle="Notes, past questions and worksheets shared with every student."
         action={
-          <Button className="gap-2 bg-white text-slate-900 hover:bg-slate-100" onClick={() => setSheetOpen(true)}>
+          <Button className="gap-2" onClick={() => setSheetOpen(true)}>
             <Upload className="h-4 w-4" /> Add to Library
           </Button>
         }

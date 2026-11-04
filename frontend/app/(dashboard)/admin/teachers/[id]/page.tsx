@@ -53,7 +53,7 @@ export default function TeacherDetailPage() {
                 <Badge
                   className={
                     teacher.is_active
-                      ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400"
+                      ? "bg-success-soft text-success hover:bg-success-soft"
                       : ""
                   }
                   variant={teacher.is_active ? "default" : "secondary"}

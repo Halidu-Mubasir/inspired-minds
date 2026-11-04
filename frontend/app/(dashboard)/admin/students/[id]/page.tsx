@@ -52,7 +52,7 @@ export default function StudentDetailPage() {
                 <Badge
                   className={
                     student.is_active
-                      ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400"
+                      ? "bg-success-soft text-success hover:bg-success-soft"
                       : ""
                   }
                   variant={student.is_active ? "default" : "secondary"}

@@ -1,33 +1,29 @@
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { SubjectBadge } from "@/components/common/SubjectBadge";
 import { SUBJECTS } from "@/lib/data/subjects";
-import { ArrowRight } from "lucide-react";
 
 export function SubjectsSection() {
   return (
-    <section className="py-20 bg-slate-50">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <SectionHeader
-          title="Subjects We Cover"
-          subtitle="Our tutors specialise across a comprehensive range of subjects at all curriculum levels."
-        />
-
-        <div className="mt-12 flex flex-wrap gap-3 justify-center">
-          {SUBJECTS.map((subject) => (
-            <SubjectBadge key={subject} subject={subject} />
-          ))}
-        </div>
-
-        <div className="mt-10 text-center">
-          <Link
-            href="/teachers"
-            className="inline-flex items-center justify-center rounded-lg bg-sky-500 hover:bg-sky-400 text-white font-semibold text-base px-8 py-3 transition-colors"
-          >
-            Meet Our Tutors
-            <ArrowRight className="ml-2 h-4 w-4" />
+    <section className="bg-background py-20 lg:py-28">
+      <div className="mx-auto grid max-w-7xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-[1fr_1.4fr] lg:px-8">
+        <div>
+          <SectionHeader
+            centered={false}
+            eyebrow="Subjects"
+            title="Tutors for every subject on the timetable"
+            subtitle="Core and elective subjects at every curriculum level. Don't see yours? Ask us — we'll find the right tutor."
+          />
+          <Link href="/teachers" className="btn-primary mt-8">
+            Meet our tutors <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
+        <ul className="flex flex-wrap gap-2.5">
+          {SUBJECTS.map((subject) => (
+            <li key={subject}><SubjectBadge subject={subject} /></li>
+          ))}
+        </ul>
       </div>
     </section>
   );

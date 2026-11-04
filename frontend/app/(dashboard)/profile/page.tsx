@@ -29,11 +29,11 @@ export default function ProfilePage() {
                 {getInitials(user.first_name, user.last_name)}
               </AvatarFallback>
             </Avatar>
-            <div>
+            <div className="min-w-0">
               <p className="font-semibold text-lg">
                 {user.first_name} {user.last_name}
               </p>
-              <p className="text-sm text-muted-foreground">{user.email}</p>
+              <p className="text-sm text-muted-foreground break-all">{user.email}</p>
               <Badge variant="secondary" className="mt-1 capitalize">
                 {user.role}
               </Badge>

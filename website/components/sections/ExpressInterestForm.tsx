@@ -55,16 +55,16 @@ export function ExpressInterestForm() {
 
   if (submitted) {
     return (
-      <section className="py-20 bg-slate-50">
+      <section className="py-16 lg:py-20 bg-cream">
         <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-12 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 mx-auto mb-6">
-              <CheckCircle2 className="h-9 w-9 text-emerald-500" />
+          <div className="bg-card rounded-3xl border shadow-sm p-12 text-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-success-soft mx-auto mb-6">
+              <CheckCircle2 className="h-9 w-9 text-success" />
             </div>
-            <h2 className="text-2xl font-bold text-[#0c2340] mb-3">
+            <h2 className="font-display text-3xl font-semibold text-primary mb-3">
               Application Received!
             </h2>
-            <p className="text-gray-600 max-w-md mx-auto">
+            <p className="text-muted-foreground max-w-md mx-auto">
               Thank you for your interest in joining Inspired Minds. Our team will
               review your application and be in touch within{" "}
               <strong>2–3 business days</strong>.
@@ -81,13 +81,13 @@ export function ExpressInterestForm() {
   }
 
   return (
-    <section className="py-20 bg-slate-50">
+    <section className="py-16 lg:py-20 bg-cream">
       <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 sm:p-10">
-          <h2 className="text-2xl font-bold text-[#0c2340] mb-2">
+        <div className="bg-card rounded-3xl border shadow-sm p-8 sm:p-10">
+          <h2 className="font-display text-3xl font-semibold text-primary mb-2">
             Express Your Interest
           </h2>
-          <p className="text-gray-500 text-sm mb-8">
+          <p className="text-muted-foreground text-sm mb-8">
             Fill in the form below and we&apos;ll be in touch to discuss the next steps.
           </p>
 
@@ -101,7 +101,7 @@ export function ExpressInterestForm() {
                 {...register("fullName")}
               />
               {errors.fullName && (
-                <p className="text-xs text-red-500">{errors.fullName.message}</p>
+                <p className="text-xs text-destructive">{errors.fullName.message}</p>
               )}
             </div>
 
@@ -116,7 +116,7 @@ export function ExpressInterestForm() {
                   {...register("email")}
                 />
                 {errors.email && (
-                  <p className="text-xs text-red-500">{errors.email.message}</p>
+                  <p className="text-xs text-destructive">{errors.email.message}</p>
                 )}
               </div>
               <div className="space-y-1.5">
@@ -128,7 +128,7 @@ export function ExpressInterestForm() {
                   {...register("phone")}
                 />
                 {errors.phone && (
-                  <p className="text-xs text-red-500">{errors.phone.message}</p>
+                  <p className="text-xs text-destructive">{errors.phone.message}</p>
                 )}
               </div>
             </div>
@@ -143,7 +143,7 @@ export function ExpressInterestForm() {
                 {...register("subjects")}
               />
               {errors.subjects && (
-                <p className="text-xs text-red-500">{errors.subjects.message}</p>
+                <p className="text-xs text-destructive">{errors.subjects.message}</p>
               )}
             </div>
 
@@ -164,7 +164,7 @@ export function ExpressInterestForm() {
                   </SelectContent>
                 </Select>
                 {errors.qualification && (
-                  <p className="text-xs text-red-500">{errors.qualification.message}</p>
+                  <p className="text-xs text-destructive">{errors.qualification.message}</p>
                 )}
               </div>
               <div className="space-y-1.5">
@@ -181,7 +181,7 @@ export function ExpressInterestForm() {
                   </SelectContent>
                 </Select>
                 {errors.experience && (
-                  <p className="text-xs text-red-500">{errors.experience.message}</p>
+                  <p className="text-xs text-destructive">{errors.experience.message}</p>
                 )}
               </div>
             </div>
@@ -190,7 +190,7 @@ export function ExpressInterestForm() {
             <div className="space-y-1.5">
               <Label htmlFor="message">
                 Why do you want to join Inspired Minds?{" "}
-                <span className="text-gray-400 font-normal">(Optional)</span>
+                <span className="text-muted-foreground/80 font-normal">(Optional)</span>
               </Label>
               <Textarea
                 id="message"
@@ -204,7 +204,7 @@ export function ExpressInterestForm() {
               type="submit"
               disabled={isSubmitting}
               size="lg"
-              className="w-full bg-sky-500 hover:bg-sky-400 text-white font-semibold"
+              className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-base"
             >
               {isSubmitting ? "Submitting…" : "Submit Application"}
             </Button>

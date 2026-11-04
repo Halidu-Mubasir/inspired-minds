@@ -107,7 +107,7 @@ export function UserDirectory({ role, title, subtitle, icon, filters = [] }: Use
         action={
           <Button
             size="sm"
-            className="gap-1.5 bg-white text-slate-900 hover:bg-slate-100 capitalize"
+            className="gap-1.5 capitalize"
             onClick={() => setAddOpen(true)}
           >
             <Plus className="h-4 w-4" />

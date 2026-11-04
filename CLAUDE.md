@@ -58,6 +58,7 @@ cd backend
 python manage.py runserver          # Dev server on :8000
 python manage.py migrate            # Run migrations
 python manage.py createsuperuser    # Create admin user
+python manage.py seed_demo          # DEBUG only: demo admin/teachers/students/lessons; prints one random password
 daphne -b 0.0.0.0 -p 8000 setup.asgi:application  # ASGI server (for WebSocket and streamed AI tutor replies; runserver buffers the stream)
 ```
 
@@ -71,7 +72,9 @@ daphne -b 0.0.0.0 -p 8000 setup.asgi:application  # ASGI server (for WebSocket a
 
 ### UI Conventions
 - Use shadcn/ui components — install via `npx shadcn@latest add <component>`
-- Style: "new-york", base color: "zinc"
+- Style: "new-york". Colours are brand tokens in `app/globals.css` (same palette as `website/app/globals.css`): `primary` forest green, `gold` highlight (always with `gold-foreground` text, never white), `leaf`, plus `success`/`warning`/`info`/`danger-soft` for status and `sidebar-*`. Never hard-code Tailwind palette colours (`emerald-100`, `sky-500`, hex) in components
+- Type: Plus Jakarta Sans for UI; Fraunces (`font-display`) only for greetings and auth headings
+- No `blur-*` filter glows: they stall low-end phones. Use `bg-[radial-gradient(closest-side,var(--gold),transparent)]` with an opacity instead
 - Icons: lucide-react
 - Forms: react-hook-form + zod validation
 - Tables: @tanstack/react-table + shadcn data-table pattern
@@ -90,7 +93,7 @@ daphne -b 0.0.0.0 -p 8000 setup.asgi:application  # ASGI server (for WebSocket a
 - Lists are paginated, searched and filtered server-side (DRF `page`, `search`, filter params) with `PaginationControls` and `useDebouncedValue`; never filter or count only the first page client-side
 - Render `ErrorState` (or `DetailPageError`, which distinguishes 404) for failed queries; don't swallow errors with `.catch(() => {})`. Use `getErrorMessage` from `lib/api/errors.ts` for toasts
 - The signed-in user comes from `useAuth()` (one `AuthProvider` in `components/providers.tsx`)
-- Shared UI: `PairingStatusBadge` / `LessonStatusBadge`, `UserDirectory`, `LessonList`, `ResourceBrowser`; date helpers (`formatDate`, `formatLongDate`, `formatTime`) in `lib/utils.ts` use date-fns
+- Shared UI: `PageHeader` (light title row), `StatCard` (`href` makes it a link, `highlight` for numbers needing action), `EmptyState` (say what appears there and how to fill it), dashboard pieces in `components/dashboard/dashboard-widgets.tsx` (`WelcomeHeader`, `Panel`, `UpcomingLessons`, `QuickActions`), `PairingStatusBadge` / `LessonStatusBadge`, `UserDirectory`, `LessonList`, `ResourceBrowser`; date helpers (`formatDate`, `formatLongDate`, `formatTime`) in `lib/utils.ts` use date-fns
 
 ### Running Frontend
 ```bash
@@ -141,6 +144,7 @@ NEXT_PUBLIC_WS_URL=ws://localhost:8000/ws
 ### Website (.env.local)
 ```
 NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1  # contact + tutor application forms post here
+NEXT_PUBLIC_LMS_URL=http://localhost:3000  # "Log in" links to the LMS
 ```
 
 ## Implementation Phases

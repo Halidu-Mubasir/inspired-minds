@@ -7,19 +7,15 @@ interface PageHeaderProps {
   className?: string;
 }
 
+/** The page's title row. Kept light so the page content, not the header, carries the weight. */
 export function PageHeader({ title, subtitle, action, className }: PageHeaderProps) {
   return (
-    <div
-      className={cn(
-        "bg-gradient-to-r from-slate-900 to-slate-700 rounded-xl px-6 py-6 flex items-center justify-between",
-        className
-      )}
-    >
-      <div>
-        <h1 className="text-2xl font-bold text-white tracking-tight">{title}</h1>
-        {subtitle && <p className="text-slate-300 text-sm mt-1">{subtitle}</p>}
+    <div className={cn("flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between", className)}>
+      <div className="min-w-0">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-[1.75rem]">{title}</h1>
+        {subtitle && <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{subtitle}</p>}
       </div>
-      {action && <div>{action}</div>}
+      {action && <div className="flex shrink-0 flex-wrap items-center gap-2">{action}</div>}
     </div>
   );
 }

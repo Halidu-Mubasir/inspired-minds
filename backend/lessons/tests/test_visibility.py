@@ -68,3 +68,10 @@ class DashboardSummaryTests(TestCase):
     def test_admin_stats_include_lessons_this_week(self):
         res = client_for(self.admin).get("/api/v1/auth/dashboard-stats/")
         self.assertEqual(res.data["lessons_this_week"], 2)
+
+    def test_upcoming_list_filters_from_a_date(self):
+        today = date.today().isoformat()
+        res = client_for(self.student).get(
+            f"/api/v1/lessons/?status=scheduled&from_date={today}&ordering=scheduled_date"
+        )
+        self.assertEqual([lesson["title"] for lesson in res.data["results"]], ["today", "this week", "next month"])

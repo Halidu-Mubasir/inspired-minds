@@ -1,12 +1,13 @@
 "use client";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Users, UserCheck, Link2, BookOpen, FileText,
   MessageSquare, Library, LogOut, Settings, GraduationCap, Bot, Sparkles, ShieldCheck,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { cn, getInitials } from "@/lib/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/use-auth";
 import type { UserRole } from "@/lib/constants";
@@ -17,134 +18,167 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
 }
 
-const NAV_ITEMS: Record<UserRole, NavItem[]> = {
+interface NavGroup {
+  label?: string;
+  items: NavItem[];
+}
+
+const NAV_GROUPS: Record<UserRole, NavGroup[]> = {
   admin: [
-    { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
-    { label: "Teachers", href: "/admin/teachers", icon: UserCheck },
-    { label: "Students", href: "/admin/students", icon: Users },
-    { label: "Pairings", href: "/admin/pairings", icon: Link2 },
-    { label: "Library", href: "/admin/library", icon: Library },
-    { label: "Tutor Chats", href: "/admin/tutor-chats", icon: ShieldCheck },
+    { items: [{ label: "Dashboard", href: "/admin", icon: LayoutDashboard }] },
+    {
+      label: "People",
+      items: [
+        { label: "Teachers", href: "/admin/teachers", icon: UserCheck },
+        { label: "Students", href: "/admin/students", icon: Users },
+        { label: "Pairings", href: "/admin/pairings", icon: Link2 },
+      ],
+    },
+    {
+      label: "Content & safety",
+      items: [
+        { label: "Library", href: "/admin/library", icon: Library },
+        { label: "Tutor Chats", href: "/admin/tutor-chats", icon: ShieldCheck },
+      ],
+    },
   ],
   teacher: [
-    { label: "Dashboard", href: "/teacher", icon: LayoutDashboard },
-    { label: "My Students", href: "/teacher/students", icon: GraduationCap },
-    { label: "Lessons", href: "/teacher/lessons", icon: BookOpen },
-    { label: "Resources", href: "/teacher/resources", icon: FileText },
-    { label: "Chat", href: "/teacher/chat", icon: MessageSquare },
-    { label: "AI Tools", href: "/teacher/ai-tools", icon: Sparkles },
-    { label: "Tutor Chats", href: "/teacher/tutor-chats", icon: ShieldCheck },
+    { items: [{ label: "Dashboard", href: "/teacher", icon: LayoutDashboard }] },
+    {
+      label: "Teaching",
+      items: [
+        { label: "My Students", href: "/teacher/students", icon: GraduationCap },
+        { label: "Lessons", href: "/teacher/lessons", icon: BookOpen },
+        { label: "Resources", href: "/teacher/resources", icon: FileText },
+        { label: "Chat", href: "/teacher/chat", icon: MessageSquare },
+      ],
+    },
+    {
+      label: "AI",
+      items: [
+        { label: "AI Tools", href: "/teacher/ai-tools", icon: Sparkles },
+        { label: "Tutor Chats", href: "/teacher/tutor-chats", icon: ShieldCheck },
+      ],
+    },
   ],
   student: [
-    { label: "Dashboard", href: "/student", icon: LayoutDashboard },
-    { label: "My Lessons", href: "/student/lessons", icon: BookOpen },
-    { label: "Resources", href: "/student/resources", icon: FileText },
-    { label: "Library", href: "/student/library", icon: Library },
-    { label: "Chat", href: "/student/chat", icon: MessageSquare },
-    { label: "AI Tutor", href: "/student/tutor", icon: Bot },
+    { items: [{ label: "Dashboard", href: "/student", icon: LayoutDashboard }] },
+    {
+      label: "Learning",
+      items: [
+        { label: "My Lessons", href: "/student/lessons", icon: BookOpen },
+        { label: "Resources", href: "/student/resources", icon: FileText },
+        { label: "Library", href: "/student/library", icon: Library },
+      ],
+    },
+    {
+      label: "Help",
+      items: [
+        { label: "Chat with Teacher", href: "/student/chat", icon: MessageSquare },
+        { label: "AI Tutor", href: "/student/tutor", icon: Bot },
+      ],
+    },
   ],
 };
 
-// Deep, rich sidebar colors per role
-const ROLE_THEME: Record<UserRole, { bg: string; logoBg: string; logoText: string }> = {
-  admin: {
-    bg: "#0c2340",       // deep navy
-    logoBg: "rgba(255,255,255,0.12)",
-    logoText: "#ffffff",
-  },
-  teacher: {
-    bg: "#7c1d2e",       // burgundy-maroon
-    logoBg: "rgba(255,255,255,0.12)",
-    logoText: "#ffffff",
-  },
-  student: {
-    bg: "#2e1065",       // deep indigo-violet
-    logoBg: "rgba(255,255,255,0.12)",
-    logoText: "#ffffff",
-  },
+const ROLE_LABEL: Record<UserRole, string> = {
+  admin: "Admin",
+  teacher: "Teacher",
+  student: "Student",
 };
 
-export function Sidebar() {
+function isActive(pathname: string, href: string) {
+  // Role home pages ("/admin") only match exactly; everything else matches its sub-pages too.
+  return href.split("/").length === 2 ? pathname === href : pathname.startsWith(href);
+}
+
+function NavLink({ item, active, onNavigate }: { item: NavItem; active: boolean; onNavigate?: () => void }) {
+  const Icon = item.icon;
+  return (
+    <Link
+      href={item.href}
+      onClick={onNavigate}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+        active
+          ? "bg-sidebar-accent text-white"
+          : "text-sidebar-muted hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
+      )}
+    >
+      {active && <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full bg-gold" aria-hidden />}
+      <Icon className={cn("h-4 w-4 shrink-0", active ? "text-gold" : "text-sidebar-muted group-hover:text-sidebar-foreground")} />
+      {item.label}
+    </Link>
+  );
+}
+
+export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
-  const role = user?.role as UserRole;
-  const items = role ? NAV_ITEMS[role] : [];
-  const theme = role ? ROLE_THEME[role] : null;
+  const role = user?.role as UserRole | undefined;
+  const groups = role ? NAV_GROUPS[role] : [];
 
   return (
-    <div
-      className="flex flex-col h-full w-64"
-      style={theme ? { backgroundColor: theme.bg } : undefined}
-    >
-      {/* Logo */}
-      <div
-        className="flex items-center gap-2.5 px-6 py-5"
-        style={{ borderBottom: "1px solid rgba(255,255,255,0.1)" }}
-      >
-        <div
-          className="flex items-center justify-center rounded-lg p-1.5"
-          style={{ backgroundColor: theme?.logoBg }}
-        >
-          <BookOpen className="h-5 w-5 text-white" />
-        </div>
-        <div>
-          <p className="font-semibold text-sm leading-none text-white">Inspired Minds</p>
-          <p className="text-xs capitalize mt-0.5" style={{ color: "rgba(255,255,255,0.55)" }}>
-            {role} Portal
-          </p>
-        </div>
-      </div>
+    <div className="flex h-full w-64 flex-col bg-sidebar text-sidebar-foreground">
+      <Link href={role ? `/${role}` : "/"} onClick={onNavigate} className="flex items-center gap-3 px-5 py-5">
+        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white p-1 shadow-sm">
+          <Image src="/logo-mark.png" alt="" width={32} height={32} className="h-8 w-8" priority />
+        </span>
+        <span className="leading-tight">
+          <span className="block text-[15px] font-bold tracking-tight text-white">
+            Inspired <span className="text-gold">Minds</span>
+          </span>
+          <span className="block text-xs text-sidebar-muted">{role ? `${ROLE_LABEL[role]} portal` : "Learning portal"}</span>
+        </span>
+      </Link>
 
-      {/* Navigation */}
-      <ScrollArea className="flex-1 py-4">
-        <nav className="space-y-0.5 px-3">
-          {items.map((item) => {
-            const Icon = item.icon;
-            const isActive =
-              item.href === "/admin" || item.href === "/teacher" || item.href === "/student"
-                ? pathname === item.href
-                : pathname.startsWith(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
-                  isActive
-                    ? "bg-white/20 text-white shadow-sm"
-                    : "text-white/65 hover:bg-white/10 hover:text-white/90"
-                )}
-              >
-                <Icon className="h-4 w-4 shrink-0" />
-                {item.label}
-              </Link>
-            );
-          })}
+      <ScrollArea className="flex-1">
+        <nav className="space-y-6 px-3 py-3" aria-label="Main">
+          {groups.map((group, i) => (
+            <div key={group.label ?? i} className="space-y-1">
+              {group.label && (
+                <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-sidebar-muted/80">
+                  {group.label}
+                </p>
+              )}
+              {group.items.map((item) => (
+                <NavLink key={item.href} item={item} active={isActive(pathname, item.href)} onNavigate={onNavigate} />
+              ))}
+            </div>
+          ))}
         </nav>
       </ScrollArea>
 
-      {/* Footer */}
-      <div className="p-3" style={{ borderTop: "1px solid rgba(255,255,255,0.1)" }}>
-        <Link
-          href="/profile"
-          className={cn(
-            "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
-            pathname === "/profile"
-              ? "bg-white/20 text-white"
-              : "text-white/65 hover:bg-white/10 hover:text-white/90"
-          )}
-        >
-          <Settings className="h-4 w-4" />
-          Profile & Settings
-        </Link>
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-3 mt-0.5 text-white/65 hover:text-white/90 hover:bg-white/10"
-          onClick={logout}
-        >
-          <LogOut className="h-4 w-4" />
-          Sign Out
-        </Button>
+      <div className="border-t border-sidebar-border p-3 space-y-1">
+        <NavLink
+          item={{ label: "Profile & Settings", href: "/profile", icon: Settings }}
+          active={pathname === "/profile"}
+          onNavigate={onNavigate}
+        />
+        {user && (
+          <div className="flex items-center gap-3 rounded-lg px-3 py-2">
+            <Avatar className="h-8 w-8 ring-2 ring-white/10">
+              <AvatarImage src={user.avatar ?? undefined} alt="" />
+              <AvatarFallback className="bg-gold text-gold-foreground text-xs font-semibold">
+                {getInitials(user.first_name, user.last_name)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-white">{user.first_name} {user.last_name}</p>
+              <p className="truncate text-xs text-sidebar-muted">{user.email}</p>
+            </div>
+            <button
+              type="button"
+              onClick={logout}
+              className="rounded-md p-1.5 text-sidebar-muted transition-colors hover:bg-sidebar-accent hover:text-white"
+              aria-label="Sign out"
+              title="Sign out"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

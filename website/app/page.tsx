@@ -15,21 +15,21 @@ export default function HomePage() {
       <HeroSection />
       <StatsSection />
       <HowItWorksSection />
-      <SubjectsSection />
       <StudentTypesSection />
-      <TestimonialsSection />
       <WhyChooseUsSection />
+      <SubjectsSection />
+      <TestimonialsSection />
       <FaqSection
         items={HOME_FAQ}
-        title="Frequently Asked Questions"
+        title="Questions parents ask us"
         subtitle="Everything you need to know about working with Inspired Minds."
       />
       <CtaSection
-        title="Ready to Find the Perfect Tutor?"
+        title="Ready to find the right tutor?"
         subtitle="Get matched with a qualified tutor within 48 hours. No stress, no hassle."
-        primaryLabel="Contact Us Today"
+        primaryLabel="Request a tutor"
         primaryHref="/contact"
-        secondaryLabel="Meet Our Tutors"
+        secondaryLabel="Meet our tutors"
         secondaryHref="/teachers"
       />
     </>
