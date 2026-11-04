@@ -1,47 +1,51 @@
-import { Phone, Mail, MapPin } from "lucide-react";
+import { Phone, Mail, MapPin, MessageCircle } from "lucide-react";
+import { SITE } from "@/lib/site";
 
 const CONTACT_INFO = [
   {
     icon: Phone,
-    title: "Call / WhatsApp",
-    lines: ["0550 583 636", "0506 402 626"],
-    color: "bg-sky-50 text-sky-600",
+    title: "Call us",
+    lines: SITE.phones.map((p) => ({ text: p.display, href: `tel:${p.tel}` })),
+  },
+  {
+    icon: MessageCircle,
+    title: "WhatsApp",
+    lines: [{ text: "Chat with us now", href: `https://wa.me/${SITE.whatsapp}` }],
   },
   {
     icon: Mail,
     title: "Email",
-    lines: ["inspiredmindst@gmail.com"],
-    color: "bg-emerald-50 text-emerald-600",
+    lines: [{ text: SITE.email, href: `mailto:${SITE.email}` }],
   },
   {
     icon: MapPin,
     title: "Location",
-    lines: ["Tamale, Northern Region", "Ghana"],
-    color: "bg-violet-50 text-violet-600",
+    lines: [{ text: SITE.location }],
   },
 ];
 
 export function ContactInfoSection() {
   return (
-    <section className="py-16 bg-white">
+    <section className="bg-background py-12">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-          {CONTACT_INFO.map(({ icon: Icon, title, lines, color }) => (
-            <div
-              key={title}
-              className="flex flex-col items-center text-center rounded-2xl border border-gray-100 p-8 bg-gray-50"
-            >
-              <div
-                className={`flex h-14 w-14 items-center justify-center rounded-2xl mb-4 ${color} bg-opacity-20`}
-              >
-                <Icon className="h-6 w-6" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {CONTACT_INFO.map(({ icon: Icon, title, lines }) => (
+            <div key={title} className="flex items-start gap-4 rounded-2xl border bg-card p-5 shadow-xs">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary">
+                <Icon className="h-5 w-5" />
+              </span>
+              <div className="min-w-0">
+                <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+                {lines.map((line) =>
+                  "href" in line && line.href ? (
+                    <a key={line.text} href={line.href} className="block break-words text-sm text-muted-foreground hover:text-primary">
+                      {line.text}
+                    </a>
+                  ) : (
+                    <p key={line.text} className="text-sm text-muted-foreground">{line.text}</p>
+                  )
+                )}
               </div>
-              <h3 className="font-bold text-[#0c2340] text-lg mb-2">{title}</h3>
-              {lines.map((line) => (
-                <p key={line} className="text-gray-600 text-sm">
-                  {line}
-                </p>
-              ))}
             </div>
           ))}
         </div>

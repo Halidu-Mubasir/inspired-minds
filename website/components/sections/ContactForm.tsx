@@ -55,27 +55,27 @@ export function ContactForm() {
   }
 
   return (
-    <section className="py-20 bg-slate-50">
+    <section className="py-16 lg:py-20 bg-cream">
       <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 sm:p-10">
-          <h2 className="text-2xl font-bold text-[#0c2340] mb-2">
+        <div className="bg-card rounded-3xl border shadow-sm p-8 sm:p-10">
+          <h2 className="font-display text-3xl font-semibold text-primary mb-2">
             Send Us a Message
           </h2>
-          <p className="text-gray-500 text-sm mb-8">
+          <p className="text-muted-foreground text-sm mb-8">
             Tell us what you need and we&apos;ll find the right tutor for you.
           </p>
 
           {submitted ? (
-            <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-6 text-center">
-              <p className="font-semibold text-emerald-800">
+            <div className="rounded-xl bg-success-soft border border-success/20 p-6 text-center">
+              <p className="font-semibold text-success">
                 ✓ Message received!
               </p>
-              <p className="text-emerald-700 text-sm mt-1">
+              <p className="text-success text-sm mt-1">
                 We&apos;ll be in touch within 24 hours.
               </p>
               <button
                 onClick={() => setSubmitted(false)}
-                className="mt-4 text-sm text-emerald-600 underline"
+                className="mt-4 text-sm text-success underline"
               >
                 Send another message
               </button>
@@ -91,7 +91,7 @@ export function ContactForm() {
                   {...register("name")}
                 />
                 {errors.name && (
-                  <p className="text-xs text-red-500">{errors.name.message}</p>
+                  <p className="text-xs text-destructive">{errors.name.message}</p>
                 )}
               </div>
 
@@ -106,13 +106,13 @@ export function ContactForm() {
                     {...register("email")}
                   />
                   {errors.email && (
-                    <p className="text-xs text-red-500">{errors.email.message}</p>
+                    <p className="text-xs text-destructive">{errors.email.message}</p>
                   )}
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="phone">
                     Phone Number{" "}
-                    <span className="text-gray-400 font-normal">(Optional)</span>
+                    <span className="text-muted-foreground/80 font-normal">(Optional)</span>
                   </Label>
                   <Input
                     id="phone"
@@ -140,7 +140,7 @@ export function ContactForm() {
                   </SelectContent>
                 </Select>
                 {errors.level && (
-                  <p className="text-xs text-red-500">{errors.level.message}</p>
+                  <p className="text-xs text-destructive">{errors.level.message}</p>
                 )}
               </div>
 
@@ -154,7 +154,7 @@ export function ContactForm() {
                   {...register("subjects")}
                 />
                 {errors.subjects && (
-                  <p className="text-xs text-red-500">{errors.subjects.message}</p>
+                  <p className="text-xs text-destructive">{errors.subjects.message}</p>
                 )}
               </div>
 
@@ -162,7 +162,7 @@ export function ContactForm() {
               <div className="space-y-1.5">
                 <Label htmlFor="message">
                   Additional Message{" "}
-                  <span className="text-gray-400 font-normal">(Optional)</span>
+                  <span className="text-muted-foreground/80 font-normal">(Optional)</span>
                 </Label>
                 <Textarea
                   id="message"
@@ -176,7 +176,7 @@ export function ContactForm() {
                 type="submit"
                 disabled={isSubmitting}
                 size="lg"
-                className="w-full bg-sky-500 hover:bg-sky-400 text-white font-semibold"
+                className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-base"
               >
                 {isSubmitting ? "Sending…" : "Send Message"}
               </Button>
