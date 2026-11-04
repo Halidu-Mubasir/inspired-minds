@@ -25,10 +25,10 @@ function FileIcon({ mimeType, resourceType }: { mimeType: string; resourceType: 
 }
 
 const typeColors: Record<ResourceType, string> = {
-  note: "bg-purple-100 text-purple-700",
-  document: "bg-blue-100 text-blue-700",
-  past_question: "bg-amber-100 text-amber-700",
-  answer_sheet: "bg-emerald-100 text-emerald-700",
+  note: "bg-accent text-accent-foreground",
+  document: "bg-info-soft text-info",
+  past_question: "bg-warning-soft text-warning",
+  answer_sheet: "bg-success-soft text-success",
   worksheet: "bg-cyan-100 text-cyan-700",
 };
 
@@ -87,7 +87,7 @@ export function ResourceCard({ resource, canDelete = false, onDeleted }: Resourc
                 <Badge variant="outline" className="text-xs">{resource.subject}</Badge>
               )}
               {resource.visibility === "library" && (
-                <Badge className="text-xs bg-slate-100 text-slate-600">Library</Badge>
+                <Badge className="text-xs bg-muted text-muted-foreground">Library</Badge>
               )}
             </div>
           </div>

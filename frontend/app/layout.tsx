@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Fraunces, Plus_Jakarta_Sans } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
 import { Providers } from "@/components/providers";
@@ -11,8 +11,14 @@ const plusJakartaSans = Plus_Jakarta_Sans({
   display: "swap",
 });
 
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-fraunces",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "Inspired Minds LMS",
+  title: "Inspired Minds — Learning Portal",
   description: "Learning Management System for Inspired Minds Home Tuition Agency",
 };
 
@@ -23,7 +29,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${plusJakartaSans.variable} font-sans`}>
+      <body className={`${plusJakartaSans.variable} ${fraunces.variable} font-sans`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="light"

@@ -21,10 +21,11 @@ class LessonFilter(django_filters.FilterSet):
     status = django_filters.CharFilter(field_name="status")
     pairing = django_filters.UUIDFilter(field_name="pairing__id")
     scheduled_date = django_filters.DateFilter(field_name="scheduled_date")
+    from_date = django_filters.DateFilter(field_name="scheduled_date", lookup_expr="gte")
 
     class Meta:
         model = Lesson
-        fields = ["status", "pairing", "scheduled_date"]
+        fields = ["status", "pairing", "scheduled_date", "from_date"]
 
 
 class LessonListCreateView(generics.ListCreateAPIView):

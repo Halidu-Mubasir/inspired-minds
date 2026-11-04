@@ -78,7 +78,7 @@ export default function PairingsPage() {
         action={
           <Button
             size="sm"
-            className="gap-1.5 bg-white text-slate-900 hover:bg-slate-100"
+            className="gap-1.5"
             onClick={() => setCreateOpen(true)}
           >
             <Plus className="h-4 w-4" />

@@ -85,7 +85,7 @@ export default function TeacherLessonDetailPage() {
             </Button>
           ) : null}
           {lesson.status === "scheduled" || lesson.status === "draft" ? (
-            <Button size="sm" className="gap-1.5 h-7 text-xs bg-emerald-600 hover:bg-emerald-700" disabled={busy}
+            <Button size="sm" className="gap-1.5 h-7 text-xs bg-success text-white hover:bg-success/90" disabled={busy}
               onClick={() => statusMutation.mutate("completed")}>
               <CheckCircle className="h-3.5 w-3.5" /> Mark Complete
             </Button>

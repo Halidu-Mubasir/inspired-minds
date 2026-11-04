@@ -40,12 +40,12 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <Card className="shadow-lg">
-      <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Reset Password</CardTitle>
+    <Card className="gap-0 border-0 bg-transparent py-0 shadow-none">
+      <CardHeader className="mb-6 px-0">
+        <CardTitle className="font-display text-3xl font-semibold tracking-tight">Reset Password</CardTitle>
         <CardDescription>Enter your email to receive a reset link</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 px-0">
         {sent ? (
           <p className="text-center text-sm text-muted-foreground">
             If that email is registered, you will receive a password reset link shortly.

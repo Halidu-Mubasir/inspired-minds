@@ -61,7 +61,7 @@ export function ChatPage() {
   }, [activeId, patchConversation, queryClient]);
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] overflow-hidden rounded-xl border bg-background">
+    <div className="flex h-[calc(100dvh-7rem)] md:h-[calc(100dvh-8rem)] overflow-hidden rounded-xl border bg-card shadow-xs">
       {/* Conversation list — hidden on mobile when thread is shown */}
       <div className={cn("w-80 flex-shrink-0", mobileShowThread && activeId ? "hidden md:flex md:flex-col" : "flex flex-col w-full md:w-80")}>
         <div className="px-4 py-3.5 border-b">

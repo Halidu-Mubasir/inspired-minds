@@ -42,7 +42,7 @@ export function UserCard({ user, basePath, onEdit }: UserCardProps) {
                 variant={user.is_active ? "default" : "secondary"}
                 className={
                   user.is_active
-                    ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 text-xs px-1.5"
+                    ? "bg-success-soft text-success hover:bg-success-soft text-xs px-1.5"
                     : "text-xs px-1.5"
                 }
               >
