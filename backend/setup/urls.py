@@ -3,6 +3,8 @@ from django.http import JsonResponse
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.urls import re_path
+from django.views.static import serve
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
@@ -42,5 +44,8 @@ if settings.EXPOSE_API_DOCS:
     ]
 
 # Dev only: static() is a no-op when DEBUG is off. In production serve /media/ (avatars)
-# from the web server or object storage; private_media/ must never be served.
+# from the web server or object storage, or set SERVE_MEDIA where nothing else can (Render).
+# private_media/ (resources) must never be served.
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+if settings.SERVE_MEDIA and not settings.DEBUG:
+    urlpatterns += [re_path(r"^media/(?P<path>.*)$", serve, {"document_root": settings.MEDIA_ROOT})]
