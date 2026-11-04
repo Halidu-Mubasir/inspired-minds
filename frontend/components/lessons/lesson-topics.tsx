@@ -73,7 +73,7 @@ export function LessonTopics({ lessonId, topics, readOnly = false, onChange }: L
             disabled={readOnly}
           >
             {topic.is_completed
-              ? <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+              ? <CheckCircle2 className="h-4 w-4 text-success" />
               : <Circle className="h-4 w-4" />
             }
           </button>

@@ -44,7 +44,7 @@ export function TutorPage() {
   if (usage.data && !usage.data.configured) return <AiNotConfigured />;
 
   return (
-    <div className="flex h-[calc(100vh-7rem)] overflow-hidden rounded-xl border bg-background">
+    <div className="flex h-[calc(100dvh-7rem)] md:h-[calc(100dvh-8rem)] overflow-hidden rounded-xl border bg-card shadow-xs">
       <div className={cn("flex-col border-r w-full md:w-72 shrink-0", activeId ? "hidden md:flex" : "flex")}>
         <div className="flex items-center justify-between px-4 py-3 border-b">
           <h2 className="font-semibold text-sm flex items-center gap-2"><Bot className="h-4 w-4" /> Study helper</h2>

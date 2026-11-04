@@ -38,7 +38,7 @@ export default function TeacherResourcesPage() {
         title="Resources"
         subtitle="Upload notes, documents, and files for your students or the shared library."
         action={
-          <Button className="gap-2 bg-white text-slate-900 hover:bg-slate-100" onClick={() => setSheetOpen(true)}>
+          <Button className="gap-2" onClick={() => setSheetOpen(true)}>
             <Upload className="h-4 w-4" /> Upload File
           </Button>
         }

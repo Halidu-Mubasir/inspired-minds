@@ -60,12 +60,12 @@ export function ResetPasswordForm() {
   }
 
   return (
-    <Card className="shadow-lg">
-      <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Choose a New Password</CardTitle>
+    <Card className="gap-0 border-0 bg-transparent py-0 shadow-none">
+      <CardHeader className="mb-6 px-0">
+        <CardTitle className="font-display text-3xl font-semibold tracking-tight">Choose a New Password</CardTitle>
         <CardDescription>Enter and confirm your new password</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 px-0">
         {!uid || !token ? (
           <p className="text-center text-sm text-muted-foreground">
             This reset link is incomplete. Please request a new one.

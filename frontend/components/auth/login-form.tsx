@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Eye, EyeOff, BookOpen } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,17 +43,12 @@ export function LoginForm() {
   };
 
   return (
-    <Card className="shadow-lg">
-      <CardHeader className="text-center space-y-2">
-        <div className="flex justify-center">
-          <div className="flex items-center gap-2 bg-primary text-primary-foreground rounded-full p-3">
-            <BookOpen className="h-6 w-6" />
-          </div>
-        </div>
-        <CardTitle className="text-2xl">Inspired Minds LMS</CardTitle>
-        <CardDescription>Sign in to your account to continue</CardDescription>
+    <Card className="gap-0 border-0 bg-transparent py-0 shadow-none">
+      <CardHeader className="mb-6 space-y-1.5 px-0">
+        <CardTitle className="font-display text-3xl font-semibold tracking-tight">Welcome back</CardTitle>
+        <CardDescription>Sign in to your Inspired Minds portal.</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-0">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email Address</Label>
@@ -88,6 +83,7 @@ export function LoginForm() {
                 type="button"
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
@@ -97,10 +93,13 @@ export function LoginForm() {
             )}
           </div>
 
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
+          <Button type="submit" className="h-11 w-full text-base" disabled={isSubmitting}>
             {isSubmitting ? "Signing in..." : "Sign In"}
           </Button>
         </form>
+        <p className="mt-6 text-center text-xs text-muted-foreground">
+          Accounts are created by the agency. Need access? Contact Inspired Minds.
+        </p>
       </CardContent>
     </Card>
   );

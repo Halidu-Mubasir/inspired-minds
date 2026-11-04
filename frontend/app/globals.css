@@ -3,47 +3,89 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * Inspired Minds brand tokens, sampled from the logo:
+ *   forest #1b4a22 (primary), sunflower #f9c823 (highlight), leaf #557a1d.
+ * Gold is a highlight only and always carries dark text; it never holds white text.
+ * The same palette is used by website/app/globals.css.
+ */
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.141 0.005 285.823);
+  --radius: 0.75rem;
+  --background: oklch(0.985 0.004 110);
+  --foreground: oklch(0.22 0.03 150);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.141 0.005 285.823);
+  --card-foreground: oklch(0.22 0.03 150);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.141 0.005 285.823);
-  --primary: oklch(0.21 0.006 285.885);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.967 0.001 286.375);
-  --secondary-foreground: oklch(0.21 0.006 285.885);
-  --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.552 0.016 285.938);
-  --accent: oklch(0.967 0.001 286.375);
-  --accent-foreground: oklch(0.21 0.006 285.885);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.92 0.004 286.32);
-  --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.705 0.015 286.067);
+  --popover-foreground: oklch(0.22 0.03 150);
+  --primary: oklch(0.37 0.085 148);
+  --primary-foreground: oklch(0.99 0.005 110);
+  --secondary: oklch(0.955 0.012 130);
+  --secondary-foreground: oklch(0.3 0.06 148);
+  --muted: oklch(0.955 0.008 110);
+  --muted-foreground: oklch(0.5 0.02 140);
+  --accent: oklch(0.95 0.02 135);
+  --accent-foreground: oklch(0.3 0.06 148);
+  --destructive: oklch(0.56 0.2 27);
+  --border: oklch(0.91 0.01 120);
+  --input: oklch(0.89 0.012 120);
+  --ring: oklch(0.55 0.1 145);
+
+  --gold: oklch(0.85 0.168 90);
+  --gold-foreground: oklch(0.27 0.06 150);
+  --gold-soft: oklch(0.96 0.05 95);
+  --leaf: oklch(0.53 0.126 129);
+  --success: oklch(0.48 0.12 150);
+  --success-soft: oklch(0.95 0.04 150);
+  --warning: oklch(0.5 0.11 65);
+  --warning-soft: oklch(0.96 0.05 90);
+  --info: oklch(0.48 0.1 240);
+  --info-soft: oklch(0.95 0.025 240);
+  --danger-soft: oklch(0.96 0.025 27);
+
+  --sidebar: oklch(0.27 0.055 152);
+  --sidebar-foreground: oklch(0.93 0.015 130);
+  --sidebar-muted: oklch(0.75 0.03 140);
+  --sidebar-accent: oklch(0.34 0.06 150);
+  --sidebar-border: oklch(1 0 0 / 9%);
 }
 
 .dark {
-  --background: oklch(0.141 0.005 285.823);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.21 0.006 285.885);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.21 0.006 285.885);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.92 0.004 286.32);
-  --primary-foreground: oklch(0.21 0.006 285.885);
-  --secondary: oklch(0.274 0.006 286.033);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.274 0.006 286.033);
-  --muted-foreground: oklch(0.705 0.015 286.067);
-  --accent: oklch(0.274 0.006 286.033);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
+  --background: oklch(0.18 0.02 150);
+  --foreground: oklch(0.96 0.01 110);
+  --card: oklch(0.215 0.022 150);
+  --card-foreground: oklch(0.96 0.01 110);
+  --popover: oklch(0.215 0.022 150);
+  --popover-foreground: oklch(0.96 0.01 110);
+  --primary: oklch(0.78 0.12 140);
+  --primary-foreground: oklch(0.2 0.04 150);
+  --secondary: oklch(0.27 0.025 150);
+  --secondary-foreground: oklch(0.94 0.01 110);
+  --muted: oklch(0.255 0.02 150);
+  --muted-foreground: oklch(0.72 0.02 140);
+  --accent: oklch(0.28 0.03 150);
+  --accent-foreground: oklch(0.94 0.01 110);
+  --destructive: oklch(0.7 0.18 25);
   --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.552 0.016 285.938);
+  --input: oklch(1 0 0 / 14%);
+  --ring: oklch(0.65 0.1 140);
+
+  --gold: oklch(0.85 0.168 90);
+  --gold-foreground: oklch(0.22 0.05 150);
+  --gold-soft: oklch(0.32 0.06 90);
+  --leaf: oklch(0.7 0.13 129);
+  --success: oklch(0.78 0.13 150);
+  --success-soft: oklch(0.3 0.05 150);
+  --warning: oklch(0.82 0.12 80);
+  --warning-soft: oklch(0.32 0.05 80);
+  --info: oklch(0.78 0.1 240);
+  --info-soft: oklch(0.3 0.04 240);
+  --danger-soft: oklch(0.32 0.06 27);
+
+  --sidebar: oklch(0.155 0.025 152);
+  --sidebar-foreground: oklch(0.93 0.015 130);
+  --sidebar-muted: oklch(0.7 0.03 140);
+  --sidebar-accent: oklch(0.24 0.035 150);
+  --sidebar-border: oklch(1 0 0 / 8%);
 }
 
 @theme inline {
@@ -51,6 +93,7 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -69,10 +112,27 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-gold: var(--gold);
+  --color-gold-foreground: var(--gold-foreground);
+  --color-gold-soft: var(--gold-soft);
+  --color-leaf: var(--leaf);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-danger-soft: var(--danger-soft);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-muted: var(--sidebar-muted);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-border: var(--sidebar-border);
 }
 
 @theme inline {
   --font-sans: var(--font-plus-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
 }
 
 @layer base {
@@ -80,6 +140,9 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+  }
+  h1, h2, h3 {
+    text-wrap: balance;
   }
 }

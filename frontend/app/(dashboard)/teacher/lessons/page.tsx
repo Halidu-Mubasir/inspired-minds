@@ -26,7 +26,7 @@ export default function TeacherLessonsPage() {
         title="Lessons"
         subtitle="Plan and manage your lesson schedules."
         action={
-          <Button size="sm" className="gap-1.5 bg-white text-slate-900 hover:bg-slate-100" onClick={() => setCreateOpen(true)}>
+          <Button size="sm" className="gap-1.5" onClick={() => setCreateOpen(true)}>
             <Plus className="h-4 w-4" /> Plan Lesson
           </Button>
         }
